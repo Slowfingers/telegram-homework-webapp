@@ -73,20 +73,6 @@ exports.handler = async (event, context) => {
         console.log('Response being returned:', JSON.stringify(response));
         return response;
 
-        const user = await checkUserInExcel(telegramId, oauthToken);
-        
-        console.log('User lookup result:', user ? 'Found' : 'Not found');
-        console.log('User data found:', user);
-        
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ 
-                success: true, 
-                user: user
-            })
-        };
-
     } catch (error) {
         console.error('Error in check-user:', error);
         return {
