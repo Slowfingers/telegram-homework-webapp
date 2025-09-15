@@ -311,11 +311,10 @@ async function checkUserRegistration() {
             console.log('Backend not available, using mock mode for user check:', error);
             console.log('Mock: Checking user registration for ID:', telegramId);
             updateDebugApiResponse({ error: error.message, mode: 'mock' });
-            // Simulate that user is not registered for demo purposes
-            setTimeout(() => {
-                console.log('Mock: User not found, showing registration');
-                showScreen('registration');
-            }, 1000);
+            
+            // Show registration screen immediately without recursion
+            console.log('Mock: User not found, showing registration');
+            showScreen('registration');
         }
     } catch (error) {
         debugLog('Error checking user registration:', error);
