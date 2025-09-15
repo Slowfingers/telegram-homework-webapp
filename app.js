@@ -140,15 +140,20 @@ function setupEventListeners() {
         adminForm.addEventListener('submit', handleAddAssignment);
     }
     
-    // File upload area
-    const fileUpload = document.getElementById('homework-file');
+    // Setup file upload handlers
     const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('homework-file');
     
-    if (fileUpload && uploadArea) {
-        uploadArea.addEventListener('click', () => fileUpload.click());
+    if (uploadArea && fileInput) {
         uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
         uploadArea.addEventListener('drop', handleFileDrop);
-        fileUpload.addEventListener('change', handleFileSelect);
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        console.log('File upload handlers set up successfully');
+    } else {
+        console.error('Upload area or file input not found');
     }
     
     // Modal close buttons
@@ -700,6 +705,12 @@ function handleDragOver(e) {
     e.currentTarget.classList.add('drag-over');
 }
 
+function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('drag-over');
+}
+
 function handleFileDrop(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -712,45 +723,46 @@ function handleFileDrop(e) {
 }
 
 function handleFileSelect(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    console.log('File selected:', file.name, file.size, file.type);
-    
-    // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-        showModal('error', 'Файл слишком большой. Максимальный размер: 10MB');
-        return;
+    const files = e.target.files;
+    if (files.length > 0) {
+        const file = files[0];
+        console.log('File selected:', file.name, file.size, file.type);
+        
+        // Validate file size (10MB limit)
+        if (file.size > 10 * 1024 * 1024) {
+            showModal('error', 'Размер файла не должен превышать 10MB');
+            return;
+        }
+        
+        // Update UI to show selected file
+        updateFileUploadUI(file);
     }
-    
-    // Validate file type
-    const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain',
-        'image/jpeg',
-        'image/png',
-        'application/zip'
-    ];
-    
-    if (!allowedTypes.includes(file.type)) {
-        showModal('error', 'Неподдерживаемый тип файла. Разрешены: PDF, DOC, DOCX, TXT, JPG, PNG, ZIP');
-        return;
-    }
-    
-    // Update UI to show selected file
+}
+
+function updateFileUploadUI(file = null) {
     const uploadArea = document.getElementById('upload-area');
-    const uploadContent = uploadArea.querySelector('.upload-content');
+    const uploadContent = uploadArea?.querySelector('.upload-content');
     
-    if (uploadArea && uploadContent) {
+    if (!uploadArea || !uploadContent) return;
+    
+    if (file) {
         uploadArea.classList.add('file-selected');
         uploadContent.innerHTML = `
-            <div class="upload-icon">📎</div>
+            <div class="upload-icon">✅</div>
             <div class="upload-text">
-                <div class="file-name">${file.name}</div>
-                <div class="file-size">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+                <div class="upload-title">Файл выбран</div>
+                <div class="upload-subtitle">${file.name}</div>
+                <div class="upload-formats">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+            </div>
+        `;
+    } else {
+        uploadArea.classList.remove('file-selected');
+        uploadContent.innerHTML = `
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">
+                <div class="upload-title">Перетащи файл сюда</div>
+                <div class="upload-subtitle">или нажми для выбора</div>
+                <div class="upload-formats">PDF, DOC, DOCX, TXT, JPG, PNG, ZIP</div>
             </div>
         `;
     }

@@ -109,16 +109,23 @@ async function checkUserInExcel(telegramId, oauthToken) {
         const existingData = await readExcelFromYandexDisk(studentsFilePath, oauthToken);
         const students = parseCSV(existingData);
         
-        // Find user by Telegram ID
-        const user = students.find(s => s['Telegram ID'] === telegramId.toString());
+        // Find user by Telegram ID (try different column name variations)
+        const user = students.find(s => 
+            s['Telegram ID'] === telegramId.toString() || 
+            s['telegramId'] === telegramId.toString() ||
+            s['ID'] === telegramId.toString()
+        );
+        
+        console.log('Looking for user with ID:', telegramId);
+        console.log('Available students:', students.map(s => ({ id: s['Telegram ID'] || s['telegramId'], name: s['Фамилия'] || s['lastName'] })));
         
         if (user) {
             return {
-                telegramId: parseInt(user['Telegram ID']),
-                class: user['Класс'],
-                lastName: user['Фамилия'],
-                firstName: user['Имя'],
-                registrationDate: user['Дата регистрации']
+                telegramId: parseInt(user['Telegram ID'] || user['telegramId']),
+                class: user['Класс'] || user['class'],
+                lastName: user['Фамилия'] || user['lastName'],
+                firstName: user['Имя'] || user['firstName'],
+                registrationDate: user['Дата регистрации'] || user['registrationDate']
             };
         }
         
