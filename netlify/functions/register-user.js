@@ -103,9 +103,8 @@ async function saveUserToExcel(userData, oauthToken) {
         console.log('Creating new students file:', error.message);
     }
     
-    // Add new user
+    // Add new user (don't overwrite existing array)
     const newStudent = {
-        id: students.length + 1,
         telegramId: userData.telegramId,
         class: userData.class,
         lastName: userData.lastName,
@@ -113,7 +112,10 @@ async function saveUserToExcel(userData, oauthToken) {
         registrationDate: new Date().toISOString().split('T')[0]
     };
     
+    // Add to existing students array
     students.push(newStudent);
+    
+    console.log('Adding new student. Total students now:', students.length);
     
     // Create updated Excel file
     const excelBuffer = createStudentsExcel(students);

@@ -425,6 +425,8 @@ async function handleHomeworkSubmission(e) {
         if (fileInput && fileInput.files.length > 0) {
             const file = fileInput.files[0];
             
+            console.log('File selected for submission:', file.name, file.size, file.type);
+            
             if (file.size > 10 * 1024 * 1024) { // 10MB limit
                 showModal('error', 'Размер файла не должен превышать 10MB');
                 return;
@@ -438,6 +440,10 @@ async function handleHomeworkSubmission(e) {
                 fileType: file.type,
                 fileSize: file.size
             };
+            
+            console.log('File data prepared for upload:', fileData.fileName, fileData.fileSize);
+        } else {
+            console.log('No file selected for submission');
         }
         
         // Try backend first, fallback to mock mode if it fails

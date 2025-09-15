@@ -128,8 +128,8 @@ function uploadFileToUrl(url, fileBuffer) {
 // Функция для создания простого Excel файла (CSV формат для совместимости)
 function createStudentsExcel(students) {
     const headers = 'ID,Telegram ID,Класс,Фамилия,Имя,Дата регистрации\n';
-    const rows = students.map(student => 
-        `${student.id || ''},${student.telegramId},${student.class},"${student.lastName}","${student.firstName}",${student.registrationDate || new Date().toISOString()}`
+    const rows = students.map((student, index) => 
+        `${index + 1},${student.telegramId},"${student.class}","${student.lastName}","${student.firstName}","${student.registrationDate || new Date().toISOString().split('T')[0]}"`
     ).join('\n');
     
     return Buffer.from(headers + rows, 'utf-8');
@@ -162,7 +162,9 @@ function createHomeworkTrackingExcel(assignments, students) {
 // Функция для парсинга CSV данных
 function parseCSV(csvData) {
     const lines = csvData.toString().split('\n');
-    const headers = lines[0].split(',');
+    if (lines.length === 0) return [];
+    
+    const headers = parseCSVLine(lines[0]);
     const data = [];
     
     for (let i = 1; i < lines.length; i++) {
@@ -170,12 +172,17 @@ function parseCSV(csvData) {
             const values = parseCSVLine(lines[i]);
             const row = {};
             headers.forEach((header, index) => {
-                row[header.trim().replace(/"/g, '')] = values[index] ? values[index].replace(/"/g, '') : '';
+                const cleanHeader = header.trim().replace(/"/g, '');
+                const cleanValue = values[index] ? values[index].trim().replace(/"/g, '') : '';
+                row[cleanHeader] = cleanValue;
             });
-            data.push(row);
+            if (Object.keys(row).length > 0 && row['Telegram ID']) {
+                data.push(row);
+            }
         }
     }
     
+    console.log('Parsed CSV data:', data);
     return data;
 }
 
