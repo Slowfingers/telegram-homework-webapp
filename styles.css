@@ -1,0 +1,320 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --danger-gradient: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --shadow-light: 0 8px 32px rgba(31, 38, 135, 0.37);
+    --shadow-heavy: 0 15px 35px rgba(31, 38, 135, 0.2);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: var(--tg-theme-text-color, #ffffff);
+    line-height: 1.6;
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+.screen {
+    display: none;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.screen.active {
+    display: block;
+}
+
+.container {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* Loading Screen */
+#loading-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.loader {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--tg-theme-hint-color, #cccccc);
+    border-top: 4px solid var(--tg-theme-button-color, #0088cc);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Typography */
+h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+    color: var(--tg-theme-text-color, #000000);
+}
+
+p {
+    margin-bottom: 15px;
+    color: var(--tg-theme-hint-color, #666666);
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--tg-theme-text-color, #000000);
+}
+
+input, select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--tg-theme-hint-color, #e1e5e9);
+    border-radius: 12px;
+    font-size: 16px;
+    background: var(--tg-theme-bg-color, #ffffff);
+    color: var(--tg-theme-text-color, #000000);
+    transition: border-color 0.3s ease;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--tg-theme-button-color, #0088cc);
+}
+
+input[readonly] {
+    background: var(--tg-theme-secondary-bg-color, #f7f9fa);
+    color: var(--tg-theme-hint-color, #666666);
+}
+
+small {
+    display: block;
+    margin-top: 5px;
+    color: var(--tg-theme-hint-color, #666666);
+    font-size: 12px;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    width: 100%;
+}
+
+.btn-primary {
+    background: var(--tg-theme-button-color, #0088cc);
+    color: var(--tg-theme-button-text-color, #ffffff);
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-large {
+    padding: 20px 24px;
+    font-size: 18px;
+    margin-bottom: 15px;
+    background: var(--tg-theme-button-color, #0088cc);
+    color: var(--tg-theme-button-text-color, #ffffff);
+}
+
+.btn-back {
+    background: transparent;
+    color: var(--tg-theme-button-color, #0088cc);
+    padding: 8px 16px;
+    width: auto;
+    margin-bottom: 10px;
+}
+
+/* Header */
+.header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header h1 {
+    flex: 1;
+    margin: 0;
+    text-align: left;
+    margin-left: 15px;
+}
+
+/* User Info */
+.user-info {
+    background: var(--tg-theme-secondary-bg-color, #f7f9fa);
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.user-info p {
+    margin-bottom: 5px;
+    color: var(--tg-theme-text-color, #000000);
+}
+
+.user-info span {
+    font-weight: 600;
+}
+
+/* Menu Buttons */
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    margin-bottom: 20px;
+    background: var(--tg-theme-secondary-bg-color, #f7f9fa);
+    border-radius: 12px;
+    padding: 4px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: var(--tg-theme-hint-color, #666666);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    background: var(--tg-theme-button-color, #0088cc);
+    color: var(--tg-theme-button-text-color, #ffffff);
+}
+
+/* Assignments List */
+.assignments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.assignment-card {
+    background: var(--tg-theme-secondary-bg-color, #f7f9fa);
+    border-radius: 12px;
+    padding: 16px;
+    border-left: 4px solid var(--tg-theme-button-color, #0088cc);
+}
+
+.assignment-date {
+    font-size: 12px;
+    color: var(--tg-theme-hint-color, #666666);
+    margin-bottom: 5px;
+}
+
+.assignment-topic {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: var(--tg-theme-text-color, #000000);
+}
+
+.assignment-description {
+    font-size: 14px;
+    color: var(--tg-theme-text-color, #000000);
+    line-height: 1.4;
+}
+
+/* File Input */
+input[type="file"] {
+    padding: 8px;
+    border: 2px dashed var(--tg-theme-hint-color, #e1e5e9);
+    background: transparent;
+}
+
+input[type="file"]:focus {
+    border-color: var(--tg-theme-button-color, #0088cc);
+}
+
+/* Error Screen */
+#error-screen {
+    text-align: center;
+}
+
+#error-screen h1 {
+    color: #ff4757;
+    margin-bottom: 15px;
+}
+
+#error-message {
+    color: var(--tg-theme-text-color, #000000);
+    margin-bottom: 30px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .container {
+        padding: 0 10px;
+    }
+    
+    .screen {
+        padding: 15px;
+    }
+    
+    h1 {
+        font-size: 20px;
+    }
+    
+    .btn-large {
+        font-size: 16px;
+        padding: 16px 20px;
+    }
+}
+
+/* Animation */
+.screen {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

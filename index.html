@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎓 Домашка - WebApp</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="styles-new.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Animated Background -->
+        <div class="bg-animation">
+            <div class="floating-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+                <div class="shape shape-4"></div>
+                <div class="shape shape-5"></div>
+            </div>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loadingScreen" class="screen active">
+            <div class="loading-container">
+                <div class="logo-animation">
+                    <div class="logo-circle">
+                        <span class="logo-emoji">🎓</span>
+                    </div>
+                    <div class="loading-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+                <h2 class="loading-text">Загружаем твою домашку...</h2>
+            </div>
+        </div>
+
+        <!-- Registration Screen -->
+        <div id="registrationScreen" class="screen">
+            <div class="container">
+                <div class="welcome-header">
+                    <div class="welcome-icon">🚀</div>
+                    <h1 class="welcome-title">Добро пожаловать!</h1>
+                    <p class="welcome-subtitle">Давай знакомиться! Расскажи о себе</p>
+                </div>
+                
+                <form id="registration-form" class="modern-form">
+                    <div class="form-group">
+                        <label for="class-select" class="form-label">
+                            <span class="label-icon">🏫</span>
+                            Твой класс
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="class-select" class="modern-select" required>
+                                <option value="">Выбери свой класс</option>
+                                <option value="5А">5А</option>
+                                <option value="5Б">5Б</option>
+                                <option value="6А">6А</option>
+                                <option value="6Б">6Б</option>
+                                <option value="7А">7А</option>
+                                <option value="7Б">7Б</option>
+                                <option value="8А">8А</option>
+                                <option value="8Б">8Б</option>
+                                <option value="9А">9А</option>
+                                <option value="9Б">9Б</option>
+                                <option value="10А">10А</option>
+                                <option value="10Б">10Б</option>
+                                <option value="11А">11А</option>
+                                <option value="11Б">11Б</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="last-name" class="form-label">
+                            <span class="label-icon">👤</span>
+                            Фамилия
+                        </label>
+                        <input type="text" id="last-name" class="modern-input" placeholder="Введи свою фамилию" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="first-name" class="form-label">
+                            <span class="label-icon">✨</span>
+                            Имя
+                        </label>
+                        <input type="text" id="first-name" class="modern-input" placeholder="Как тебя зовут?" required>
+                    </div>
+                    
+                    <button type="submit" class="btn-modern btn-primary">
+                        <span class="btn-text">Поехали! 🎉</span>
+                        <div class="btn-ripple"></div>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Menu Screen -->
+        <div id="mainScreen" class="screen">
+            <div class="container">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <span class="avatar-emoji">🎯</span>
+                    </div>
+                    <div class="profile-info">
+                        <h2 class="profile-name">Привет, <span id="user-name"></span>! 👋</h2>
+                        <p class="profile-class">Класс: <span id="user-class"></span></p>
+                    </div>
+                </div>
+                
+                <div class="menu-grid">
+                    <button id="check-homework-btn" class="menu-card card-blue">
+                        <div class="card-icon">📚</div>
+                        <div class="card-content">
+                            <h3>Узнать домашку</h3>
+                            <p>Посмотри что задали</p>
+                        </div>
+                        <div class="card-arrow">→</div>
+                    </button>
+                    
+                    <button id="submit-homework-btn" class="menu-card card-green">
+                        <div class="card-icon">📝</div>
+                        <div class="card-content">
+                            <h3>Сдать домашку</h3>
+                            <p>Загрузи выполненное задание</p>
+                        </div>
+                        <div class="card-arrow">→</div>
+                    </button>
+                </div>
+
+                <!-- Admin Button (hidden by default) -->
+                <button id="admin-btn" class="admin-button" style="display: none;">
+                    <span class="admin-icon">⚙️</span>
+                    Админ панель
+                </button>
+            </div>
+        </div>
+
+        <!-- Check Homework Screen -->
+        <div id="assignmentsScreen" class="screen">
+            <div class="container">
+                <div class="screen-header">
+                    <button id="back-from-check" class="back-btn">
+                        <span class="back-icon">←</span>
+                    </button>
+                    <h1 class="screen-title">📚 Домашние задания</h1>
+                </div>
+                
+                <div class="tabs-container">
+                    <div class="tabs">
+                        <button id="current-tab" class="tab-btn active">
+                            <span class="tab-icon">🔥</span>
+                            Актуальные
+                        </button>
+                        <button id="archive-tab" class="tab-btn">
+                            <span class="tab-icon">📦</span>
+                            Архив
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="assignments-list" class="assignments-container">
+                    <!-- Assignments will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Homework Screen -->
+        <div id="submissionScreen" class="screen">
+            <div class="container">
+                <div class="screen-header">
+                    <button id="back-from-submit" class="back-btn">
+                        <span class="back-icon">←</span>
+                    </button>
+                    <h1 class="screen-title">📝 Сдать домашку</h1>
+                </div>
+                
+                <form id="submit-form" class="submit-form">
+                    <div class="student-info">
+                        <div class="info-row">
+                            <span class="info-label">Класс:</span>
+                            <span id="submit-class" class="info-value"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Ученик:</span>
+                            <span class="info-value">
+                                <span id="submit-last-name"></span> <span id="submit-first-name"></span>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="upload-section">
+                        <div class="upload-area" id="upload-area">
+                            <input type="file" id="homework-file" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.zip" required>
+                            <div class="upload-content">
+                                <div class="upload-icon">📎</div>
+                                <h3>Перетащи файл сюда</h3>
+                                <p>или нажми для выбора</p>
+                                <div class="supported-formats">
+                                    PDF, DOC, DOCX, TXT, JPG, PNG, ZIP
+                                </div>
+                            </div>
+                        </div>
+                        <div id="file-preview" class="file-preview" style="display: none;">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <div class="file-details">
+                                    <span class="file-name"></span>
+                                    <span class="file-size"></span>
+                                </div>
+                                <button type="button" class="remove-file">×</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-modern btn-success">
+                        <span class="btn-text">Отправить работу 🚀</span>
+                        <div class="btn-ripple"></div>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Admin Screen -->
+        <div id="adminScreen" class="screen">
+            <div class="container">
+                <div class="screen-header">
+                    <button id="back-from-admin" class="back-btn">
+                        <span class="back-icon">←</span>
+                    </button>
+                    <h1 class="screen-title">⚙️ Админ панель</h1>
+                </div>
+                
+                <form id="admin-form" class="admin-form">
+                    <div class="form-group">
+                        <label for="assignment-date" class="form-label">
+                            <span class="label-icon">📅</span>
+                            Дата задания
+                        </label>
+                        <input type="date" id="assignment-date" class="modern-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="assignment-class" class="form-label">
+                            <span class="label-icon">🏫</span>
+                            Класс
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="assignment-class" class="modern-select" required>
+                                <option value="">Выберите класс</option>
+                                <option value="5А">5А</option>
+                                <option value="5Б">5Б</option>
+                                <option value="6А">6А</option>
+                                <option value="6Б">6Б</option>
+                                <option value="7А">7А</option>
+                                <option value="7Б">7Б</option>
+                                <option value="8А">8А</option>
+                                <option value="8Б">8Б</option>
+                                <option value="9А">9А</option>
+                                <option value="9Б">9Б</option>
+                                <option value="10А">10А</option>
+                                <option value="10Б">10Б</option>
+                                <option value="11А">11А</option>
+                                <option value="11Б">11Б</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="assignment-topic" class="form-label">
+                            <span class="label-icon">📖</span>
+                            Тема
+                        </label>
+                        <input type="text" id="assignment-topic" class="modern-input" placeholder="Например: Алгоритмы сортировки" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="assignment-description" class="form-label">
+                            <span class="label-icon">📝</span>
+                            Описание
+                        </label>
+                        <textarea id="assignment-description" class="modern-textarea" placeholder="Подробное описание задания..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="assignment-link" class="form-label">
+                            <span class="label-icon">🔗</span>
+                            Ссылка на материал (необязательно)
+                        </label>
+                        <input type="url" id="assignment-link" class="modern-input" placeholder="https://example.com/material">
+                    </div>
+                    
+                    <button type="submit" class="btn-modern btn-primary">
+                        <span class="btn-text">Добавить задание ✨</span>
+                        <div class="btn-ripple"></div>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Error Screen -->
+        <div id="error-screen" class="screen">
+            <div class="container">
+                <div class="error-content">
+                    <div class="error-icon">😕</div>
+                    <h1 class="error-title">Упс! Что-то пошло не так</h1>
+                    <p id="error-message" class="error-message"></p>
+                    <button id="retry-btn" class="btn-modern btn-primary">
+                        <span class="btn-text">Попробовать снова</span>
+                        <div class="btn-ripple"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="success-modal" class="modal">
+            <div class="modal-content">
+                <div class="success-animation">
+                    <div class="checkmark">✓</div>
+                </div>
+                <h3>Отлично!</h3>
+                <p id="success-message"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

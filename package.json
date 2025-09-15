@@ -1,0 +1,26 @@
+{
+  "name": "homework-teacher-webapp",
+  "version": "1.0.0",
+  "description": "Telegram WebApp for computer science teacher homework management",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'No build step required'",
+    "dev": "npx http-server . -p 8080"
+  },
+  "dependencies": {
+    "lambda-multipart-parser": "^1.0.1"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "netlify-cli": "^23.5.1"
+  },
+  "keywords": [
+    "telegram",
+    "webapp",
+    "homework",
+    "education",
+    "netlify"
+  ],
+  "author": "Computer Science Teacher",
+  "license": "MIT"
+}
