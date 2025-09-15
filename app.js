@@ -1,11 +1,12 @@
-// Application state
+// Global variables
+let tg;
 let currentUser = null;
-let currentScreen = 'loading';
-let tg = null;
-let isAdmin = false;
+let currentAssignments = [];
+let archivedAssignments = [];
+let selectedFile = null;
+let isInitialized = false; // Prevent multiple initializations
 
-// API Configuration
-const API_BASE_URL = '/.netlify/functions';
+const API_BASE_URL = 'https://telegram-homework-webapp.netlify.app/.netlify/functions';
 
 // Debug functions
 function updateDebugInfo() {
@@ -96,9 +97,17 @@ function toggleDebugPanel() {
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, starting initialization...');
+    
+    // Prevent multiple initializations
+    if (isInitialized) {
+        console.log('App already initialized, skipping...');
+        return;
+    }
+    
     try {
         initializeApp();
         setupEventListeners();
+        isInitialized = true;
     } catch (error) {
         debugLog('Initialization error:', error);
         showError('Ошибка инициализации приложения');
