@@ -210,9 +210,11 @@ async function checkUserRegistration() {
             if (data.success && data.user) {
                 // User is registered
                 currentUser = data.user;
+                console.log('User found from backend:', currentUser);
                 showMainMenu();
             } else {
                 // User needs to register
+                console.log('User not found, showing registration');
                 showScreen('registration');
             }
         } catch (error) {
@@ -308,10 +310,17 @@ function showMainMenu() {
     
     if (userName && currentUser) {
         userName.textContent = `${currentUser.firstName} ${currentUser.lastName}`;
+    } else if (userName) {
+        userName.textContent = 'Пользователь';
     }
+    
     if (userClass && currentUser) {
         userClass.textContent = currentUser.class;
+    } else if (userClass) {
+        userClass.textContent = 'Не указан';
     }
+    
+    console.log('showMainMenu: currentUser =', currentUser);
     
     showScreen('main');
 }
@@ -668,15 +677,27 @@ function showMainMenu() {
 // Prefill submission form with user data
 function prefillSubmissionForm() {
     console.log('Prefilling submission form...');
+    console.log('Current user data:', currentUser);
     
     if (currentUser) {
         const classField = document.getElementById('submit-class');
         const lastNameField = document.getElementById('submit-last-name');
         const firstNameField = document.getElementById('submit-first-name');
         
-        if (classField) classField.value = currentUser.class || '';
-        if (lastNameField) lastNameField.value = currentUser.lastName || '';
-        if (firstNameField) firstNameField.value = currentUser.firstName || '';
+        if (classField) {
+            classField.value = currentUser.class || '';
+            console.log('Set class field to:', currentUser.class);
+        }
+        if (lastNameField) {
+            lastNameField.value = currentUser.lastName || '';
+            console.log('Set lastName field to:', currentUser.lastName);
+        }
+        if (firstNameField) {
+            firstNameField.value = currentUser.firstName || '';
+            console.log('Set firstName field to:', currentUser.firstName);
+        }
+    } else {
+        console.log('No currentUser data available for prefilling');
     }
 }
 
