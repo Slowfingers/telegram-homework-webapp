@@ -53,10 +53,9 @@ function downloadFile(url) {
     });
 }
 
-// Функция для загрузки Excel файла на Yandex Disk
-async function uploadExcelToYandexDisk(filePath, fileBuffer, oauthToken) {
+// Функция для получения ссылки для загрузки на Yandex Disk
+async function getYandexUploadUrl(filePath, oauthToken) {
     return new Promise((resolve, reject) => {
-        // Сначала получаем ссылку для загрузки
         const options = {
             hostname: 'cloud-api.yandex.net',
             path: `/v1/disk/resources/upload?path=${encodeURIComponent(filePath)}&overwrite=true`,
@@ -209,10 +208,58 @@ function parseCSVLine(line) {
     return result;
 }
 
+// Функция для добавления строки в CSV файл (append-only)
+async function appendToCSV(filePath, newRowData, oauthToken) {
+    console.log('Attempting to append to CSV:', filePath);
+    
+    try {
+        // Читаем существующий файл
+        const existingData = await readExcelFromYandexDisk(filePath, oauthToken);
+        console.log('Existing CSV content length:', existingData.length);
+        
+        // Парсим существующие данные для получения следующего ID
+        const existingLines = existingData.toString().split('\n').filter(line => line.trim());
+        let nextId = 1;
+        
+        if (existingLines.length > 1) { // Есть заголовок и данные
+            const lastDataLine = existingLines[existingLines.length - 1];
+            const lastId = parseInt(lastDataLine.split(',')[0]) || 0;
+            nextId = lastId + 1;
+        }
+        
+        // Создаем новую строку CSV
+        const newRow = `${nextId},"${newRowData.telegramId}","${newRowData.class}","${newRowData.lastName}","${newRowData.firstName}","${newRowData.registrationDate}"`;
+        
+        // Добавляем новую строку к существующему содержимому
+        const updatedContent = existingData.toString().trim() + '\n' + newRow;
+        const updatedBuffer = Buffer.from(updatedContent, 'utf-8');
+        
+        // Загружаем обновленный файл
+        await uploadExcelToYandexDisk(filePath, updatedBuffer, oauthToken);
+        
+        console.log('Successfully appended new row to CSV');
+        return true;
+        
+    } catch (error) {
+        console.log('File does not exist, creating new one with header and data');
+        
+        // Если файл не существует, создаем новый с заголовками
+        const headers = 'ID,Telegram ID,Класс,Фамилия,Имя,Дата регистрации';
+        const newRow = `1,"${newRowData.telegramId}","${newRowData.class}","${newRowData.lastName}","${newRowData.firstName}","${newRowData.registrationDate}"`;
+        const content = headers + '\n' + newRow;
+        const buffer = Buffer.from(content, 'utf-8');
+        
+        await uploadExcelToYandexDisk(filePath, buffer, oauthToken);
+        console.log('Created new CSV file with first entry');
+        return true;
+    }
+}
+
 module.exports = {
     readExcelFromYandexDisk,
     uploadExcelToYandexDisk,
     createStudentsExcel,
     createHomeworkTrackingExcel,
-    parseCSV
+    parseCSV,
+    appendToCSV
 };
