@@ -165,6 +165,7 @@ function parseCSV(csvData) {
     if (lines.length === 0) return [];
     
     const headers = parseCSVLine(lines[0]);
+    console.log('CSV Headers found:', headers);
     const data = [];
     
     for (let i = 1; i < lines.length; i++) {
@@ -176,8 +177,16 @@ function parseCSV(csvData) {
                 const cleanValue = values[index] ? values[index].trim().replace(/"/g, '') : '';
                 row[cleanHeader] = cleanValue;
             });
-            if (Object.keys(row).length > 0 && row['Telegram ID']) {
+            
+            // Check if row has any ID field (more flexible check)
+            const hasId = row['Telegram ID'] || row['telegramId'] || row['ID'] || 
+                         Object.keys(row).some(key => key.toLowerCase().includes('telegram') || key.toLowerCase().includes('id'));
+            
+            if (Object.keys(row).length > 0 && hasId) {
+                console.log('Adding row to data:', row);
                 data.push(row);
+            } else {
+                console.log('Skipping row (no ID):', row);
             }
         }
     }

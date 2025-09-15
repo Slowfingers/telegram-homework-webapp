@@ -157,11 +157,28 @@ async function checkUserInExcel(telegramId, oauthToken) {
         console.log('Raw CSV content preview:', existingData.toString().substring(0, 500));
         
         // Find user by Telegram ID (try different column name variations)
-        const user = students.find(s => 
-            s['Telegram ID'] === telegramId.toString() || 
-            s['telegramId'] === telegramId.toString() ||
-            s['ID'] === telegramId.toString()
-        );
+        const user = students.find(s => {
+            const id1 = s['Telegram ID'];
+            const id2 = s['telegramId']; 
+            const id3 = s['ID'];
+            
+            console.log('Comparing IDs:', {
+                searching: telegramId.toString(),
+                found_id1: id1,
+                found_id2: id2,
+                found_id3: id3,
+                match1: id1 === telegramId.toString(),
+                match2: id2 === telegramId.toString(),
+                match3: id3 === telegramId.toString()
+            });
+            
+            return id1 === telegramId.toString() || 
+                   id2 === telegramId.toString() ||
+                   id3 === telegramId.toString() ||
+                   parseInt(id1) === telegramId ||
+                   parseInt(id2) === telegramId ||
+                   parseInt(id3) === telegramId;
+        });
         
         console.log('Looking for user with ID:', telegramId);
         console.log('Available students:', students.map(s => ({ 
