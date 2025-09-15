@@ -35,38 +35,43 @@ exports.handler = async (event, context) => {
         console.log('telegramId type:', typeof telegramId);
         console.log('telegramId value:', telegramId);
 
-        // Check environment variables
-        const oauthToken = process.env.YANDEX_OAUTH_TOKEN;
+        // FORCE MOCK USER RETURN - BYPASS ALL LOGIC FOR DEBUGGING
+        console.log('=== FORCE MOCK USER DEBUG ===');
+        console.log('Received telegramId:', telegramId, 'type:', typeof telegramId);
+        console.log('Environment variables available:', Object.keys(process.env).filter(key => key.includes('YANDEX')));
         
-        console.log('Environment check:', {
-            hasOauthToken: !!oauthToken
-        });
-
-        // If no OAuth token, use hardcoded token and alternative check method
-        if (!oauthToken) {
-            console.log('Working in demo mode - FORCING mock user return');
-            
-            // FORCE return mock user for debugging - bypass all conditions
-            console.log('FORCE: Returning mock user for any telegramId to debug the issue');
-            const mockUser = {
-                telegramId: parseInt(telegramId),
-                class: "7Б",
-                lastName: "dfg",
-                firstName: "sddfv",
-                registrationDate: new Date().toISOString().split('T')[0]
-            };
-            
-            console.log('FORCE: Mock user created:', mockUser);
-            
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify({ 
-                    success: true, 
-                    user: mockUser
-                })
-            };
-        }
+        const oauthToken = process.env.YANDEX_OAUTH_TOKEN;
+        console.log('OAuth token exists:', !!oauthToken);
+        console.log('OAuth token length:', oauthToken ? oauthToken.length : 0);
+        
+        // ALWAYS return mock user regardless of environment
+        console.log('FORCING mock user return for debugging...');
+        const mockUser = {
+            telegramId: parseInt(telegramId),
+            class: "7А",
+            lastName: "dfg", 
+            firstName: "dfg",
+            registrationDate: new Date().toISOString().split('T')[0]
+        };
+        
+        console.log('Mock user created:', JSON.stringify(mockUser));
+        
+        const response = {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ 
+                success: true, 
+                user: mockUser,
+                debug: {
+                    hasOauthToken: !!oauthToken,
+                    telegramIdReceived: telegramId,
+                    mockUserCreated: true
+                }
+            })
+        };
+        
+        console.log('Response being returned:', JSON.stringify(response));
+        return response;
 
         const user = await checkUserInExcel(telegramId, oauthToken);
         
