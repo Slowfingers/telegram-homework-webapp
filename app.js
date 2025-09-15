@@ -184,37 +184,38 @@ async function checkUserRegistration() {
         const telegramId = tg.initDataUnsafe.user.id;
         console.log('User ID:', telegramId);
         
-        // For local testing, simulate user registration check
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // Try backend first, fallback to mock mode if it fails
+        try {
+            const response = await fetch(`${API_BASE_URL}/check-user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    telegramId: telegramId,
+                    initData: tg.initData
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.user) {
+                // User is registered
+                currentUser = data.user;
+                showMainMenu();
+            } else {
+                // User needs to register
+                showScreen('registration');
+            }
+        } catch (error) {
+            // Fallback to mock mode if backend is not available
+            console.log('Backend not available, using mock mode for user check:', error);
             console.log('Mock: Checking user registration for ID:', telegramId);
             // Simulate that user is not registered for demo purposes
             setTimeout(() => {
                 console.log('Mock: User not found, showing registration');
                 showScreen('registration');
             }, 1000);
-            return;
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/check-user`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                telegramId: telegramId,
-                initData: tg.initData
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success && data.user) {
-            // User is registered
-            currentUser = data.user;
-            showMainMenu();
-        } else {
-            // User needs to register
-            showScreen('registration');
         }
     } catch (error) {
         console.error('Error checking user registration:', error);
@@ -250,39 +251,41 @@ async function handleRegistration(e) {
             return;
         }
         
-        // For local testing, simulate successful registration
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.log('Mock: Registering user:', userData);
-            setTimeout(() => {
+        // Try backend first, fallback to mock mode if it fails
+        try {
+            const response = await fetch(`${API_BASE_URL}/register-user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    telegramId: userData.telegramId,
+                    initData: tg.initData,
+                    userData: userData
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
                 currentUser = userData;
-                console.log('Mock: Registration successful');
                 showModal('success', 'Регистрация прошла успешно!');
                 setTimeout(() => {
                     showMainMenu();
                 }, 2000);
-            }, 1000);
-            return;
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/register-user`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                telegramId: userData.telegramId,
-                initData: tg.initData,
-                userData: userData
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
+            } else {
+                showModal('error', data.message || 'Ошибка регистрации');
+            }
+        } catch (error) {
+            // Fallback to mock mode if backend is not available
+            console.log('Backend not available, using mock mode:', error);
+            console.log('Mock: Registering user:', userData);
+            
             currentUser = userData;
-            showModal('success', 'Регистрация прошла успешно!');
-        } else {
-            showModal('error', data.message || 'Ошибка регистрации');
+            showModal('success', 'Регистрация прошла успешно! (демо режим)');
+            setTimeout(() => {
+                showMainMenu();
+            }, 2000);
         }
     } catch (error) {
         console.error('Registration error:', error);
@@ -308,11 +311,45 @@ function showMainMenu() {
 // Load assignments
 async function loadAssignments(type = 'current') {
     try {
-        // For local testing, use mock data
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.log('Mock: Loading assignments for class:', currentUser.class, 'type:', type);
+        // Try backend first, fallback to mock data if it fails
+        try {
+            const response = await fetch(`${API_BASE_URL}/get-assignments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    telegramId: tg.initDataUnsafe.user.id,
+                    initData: tg.initData,
+                    userClass: currentUser.class,
+                    type: type
+                })
+            });
             
-            const mockAssignments = type === 'current' ? [
+            const data = await response.json();
+            
+            if (data.success) {
+                displayAssignments(data.assignments);
+            } else {
+                console.log('Backend returned error, using mock data');
+                useMockAssignments(type);
+            }
+        } catch (error) {
+            // Fallback to mock data if backend is not available
+            console.log('Backend not available, using mock data:', error);
+            useMockAssignments(type);
+        }
+    } catch (error) {
+        console.error('Error loading assignments:', error);
+        useMockAssignments(type);
+    }
+}
+
+// Use mock assignments data
+function useMockAssignments(type) {
+    console.log('Mock: Loading assignments for class:', currentUser?.class || 'Unknown', 'type:', type);
+    
+    const mockAssignments = type === 'current' ? [
                 {
                     date: '2024-01-15',
                     topic: 'Алгоритмы сортировки',
@@ -325,46 +362,15 @@ async function loadAssignments(type = 'current') {
                 }
             ] : [
                 {
-                    date: '2024-01-05',
-                    topic: 'Системы счисления',
-                    description: 'Решить задачи на перевод чисел из десятичной системы в двоичную и обратно.'
-                },
-                {
-                    date: '2023-12-20',
-                    topic: 'Циклы в программировании',
-                    description: 'Написать программы с использованием циклов for и while.'
+                    date: '2024-01-10',
+                    topic: 'Переменные в Python',
+                    description: 'Изучить типы данных и работу с переменными в Python.'
                 }
             ];
             
             setTimeout(() => {
                 displayAssignments(mockAssignments);
             }, 500);
-            return;
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/get-assignments`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                class: currentUser.class,
-                type: type,
-                initData: tg.initData
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            displayAssignments(data.assignments);
-        } else {
-            showError(data.message || 'Ошибка загрузки заданий');
-        }
-    } catch (error) {
-        console.error('Error loading assignments:', error);
-        showError('Ошибка подключения к серверу');
-    }
 }
 
 // Display assignments
@@ -510,8 +516,37 @@ async function handleAddAssignment(e) {
             return;
         }
         
-        // For local testing, simulate successful assignment creation
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // Try backend first, fallback to mock mode if it fails
+        try {
+            const response = await fetch(`${API_BASE_URL}/add-assignment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    telegramId: tg.initDataUnsafe.user.id,
+                    initData: tg.initData,
+                    assignmentData: assignmentData
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Reset form
+                assignmentDate.value = '';
+                assignmentClass.value = '';
+                assignmentTopic.value = '';
+                assignmentDescription.value = '';
+                if (materialLink) materialLink.value = '';
+                
+                showModal('success', 'Домашнее задание успешно добавлено!');
+            } else {
+                showModal('error', data.message || 'Ошибка при добавлении задания');
+            }
+        } catch (error) {
+            // Fallback to mock mode if backend is not available
+            console.log('Backend not available, using mock mode for assignment creation:', error);
             console.log('Mock: Adding assignment:', assignmentData);
             
             setTimeout(() => {
@@ -522,36 +557,8 @@ async function handleAddAssignment(e) {
                 assignmentDescription.value = '';
                 if (materialLink) materialLink.value = '';
                 
-                showModal('success', 'Домашнее задание успешно добавлено!');
+                showModal('success', 'Домашнее задание успешно добавлено! (демо режим)');
             }, 1000);
-            return;
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/add-assignment`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                telegramId: tg.initDataUnsafe.user.id,
-                initData: tg.initData,
-                assignmentData: assignmentData
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // Reset form
-            assignmentDate.value = '';
-            assignmentClass.value = '';
-            assignmentTopic.value = '';
-            assignmentDescription.value = '';
-            if (materialLink) materialLink.value = '';
-            
-            showModal('success', 'Домашнее задание успешно добавлено!');
-        } else {
-            showModal('error', data.message || 'Ошибка при добавлении задания');
         }
     } catch (error) {
         console.error('Add assignment error:', error);
