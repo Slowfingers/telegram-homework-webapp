@@ -32,6 +32,8 @@ exports.handler = async (event, context) => {
         const { telegramId, initData } = JSON.parse(event.body);
 
         console.log('Checking user registration for ID:', telegramId);
+        console.log('telegramId type:', typeof telegramId);
+        console.log('telegramId value:', telegramId);
 
         // Check environment variables
         const oauthToken = process.env.YANDEX_OAUTH_TOKEN;
@@ -49,15 +51,21 @@ exports.handler = async (event, context) => {
             
             try {
                 // For specific user 606360710, let's create a mock user to test
-                if (telegramId === 606360710) {
+                console.log('Checking if telegramId matches 606360710:', telegramId, '===', 606360710, telegramId === 606360710);
+                console.log('Checking string comparison:', telegramId, '===', '606360710', telegramId === '606360710');
+                console.log('Checking number comparison:', parseInt(telegramId), '===', 606360710, parseInt(telegramId) === 606360710);
+                
+                if (telegramId === 606360710 || telegramId === '606360710' || parseInt(telegramId) === 606360710) {
                     console.log('Demo mode: Creating mock user for testing ID 606360710');
                     const mockUser = {
                         telegramId: 606360710,
-                        class: "7А",
-                        lastName: "акца",
-                        firstName: "аука",
+                        class: "6Б",
+                        lastName: "ууцуа",
+                        firstName: "ываыа",
                         registrationDate: new Date().toISOString().split('T')[0]
                     };
+                    
+                    console.log('Returning mock user:', mockUser);
                     
                     return {
                         statusCode: 200,
