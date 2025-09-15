@@ -317,16 +317,60 @@
             </div>
         </div>
 
-        <!-- Success Modal -->
-        <div id="success-modal" class="modal">
-            <div class="modal-content">
-                <div class="success-animation">
-                    <div class="checkmark">✓</div>
+        <!-- Debug Panel -->
+        <div id="debugPanel" class="debug-panel">
+            <div class="debug-header">
+                <h4>🐛 Debug Info</h4>
+                <button onclick="toggleDebug()" class="debug-toggle">❌</button>
+            </div>
+            <div class="debug-content">
+                <div class="debug-section">
+                    <strong>Current User:</strong>
+                    <pre id="debugCurrentUser">null</pre>
                 </div>
-                <h3>Отлично!</h3>
-                <p id="success-message"></p>
+                <div class="debug-section">
+                    <strong>Last API Response:</strong>
+                    <pre id="debugApiResponse">none</pre>
+                </div>
+                <div class="debug-section">
+                    <strong>Telegram Data:</strong>
+                    <pre id="debugTelegramData">none</pre>
+                </div>
             </div>
         </div>
+
+        <!-- Debug Toggle Button -->
+        <button id="debugToggleBtn" onclick="toggleDebug()" class="debug-btn">🐛</button>
+
+        <!-- Success Modal -->
+        <div id="successModal" class="modal">
+            <div class="modal-content success">
+                <div class="modal-header">
+                    <h3>✅ Успех</h3>
+                </div>
+                <div class="modal-body">
+                    <p id="successMessage"></p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="closeModal('success')">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Log Panel -->
+        <div id="debug-panel" class="fixed bottom-0 left-0 right-0 bg-gray-900 text-green-400 text-xs p-2 max-h-32 overflow-y-auto hidden">
+            <div class="flex justify-between items-center mb-1">
+                <span class="font-bold">Debug Logs:</span>
+                <button onclick="toggleDebugPanel()" class="text-red-400 hover:text-red-300">✕</button>
+            </div>
+            <div id="debug-logs" class="space-y-1"></div>
+        </div>
+
+        <!-- Debug Toggle Button -->
+        <button id="debug-toggle" onclick="toggleDebugPanel()" class="fixed bottom-4 right-4 bg-blue-600 text-white p-2 rounded-full shadow-lg z-50">
+            🐛
+        </button>
+
     </div>
 
     <script src="app.js"></script>

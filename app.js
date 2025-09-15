@@ -7,6 +7,92 @@ let isAdmin = false;
 // API Configuration
 const API_BASE_URL = '/.netlify/functions';
 
+// Debug functions
+function updateDebugInfo() {
+    const debugCurrentUser = document.getElementById('debugCurrentUser');
+    const debugTelegramData = document.getElementById('debugTelegramData');
+    
+    if (debugCurrentUser) {
+        debugCurrentUser.textContent = JSON.stringify(currentUser, null, 2);
+    }
+    
+    if (debugTelegramData && tg) {
+        debugTelegramData.textContent = JSON.stringify({
+            user: tg.initDataUnsafe?.user,
+            initData: tg.initData ? tg.initData.substring(0, 100) + '...' : 'none'
+        }, null, 2);
+    }
+}
+
+function updateDebugApiResponse(response) {
+    const debugApiResponse = document.getElementById('debugApiResponse');
+    if (debugApiResponse) {
+        debugApiResponse.textContent = JSON.stringify(response, null, 2);
+    }
+}
+
+function toggleDebug() {
+    const debugPanel = document.getElementById('debugPanel');
+    if (debugPanel) {
+        if (debugPanel.style.display === 'none' || !debugPanel.style.display) {
+            debugPanel.style.display = 'block';
+            updateDebugInfo();
+        } else {
+            debugPanel.style.display = 'none';
+        }
+    }
+}
+
+// Debug logging system
+let debugLogs = [];
+let debugPanelVisible = false;
+
+function debugLog(message, data = null) {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${message}`;
+    
+    debugLogs.push(logEntry);
+    if (data) {
+        debugLogs.push(`  Data: ${JSON.stringify(data, null, 2)}`);
+    }
+    
+    // Keep only last 50 logs
+    if (debugLogs.length > 50) {
+        debugLogs = debugLogs.slice(-50);
+    }
+    
+    updateDebugPanel();
+    
+    // Also log to console if available
+    console.log(logEntry, data);
+}
+
+function updateDebugPanel() {
+    const debugLogsElement = document.getElementById('debug-logs');
+    if (debugLogsElement) {
+        debugLogsElement.innerHTML = debugLogs.map(log => 
+            `<div class="text-xs">${log}</div>`
+        ).join('');
+        debugLogsElement.scrollTop = debugLogsElement.scrollHeight;
+    }
+}
+
+function toggleDebugPanel() {
+    const debugPanel = document.getElementById('debug-panel');
+    const debugToggle = document.getElementById('debug-toggle');
+    
+    if (debugPanel) {
+        debugPanelVisible = !debugPanelVisible;
+        if (debugPanelVisible) {
+            debugPanel.classList.remove('hidden');
+            debugToggle.textContent = '';
+        } else {
+            debugPanel.classList.add('hidden');
+            debugToggle.textContent = '';
+        }
+    }
+}
+
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, starting initialization...');
@@ -14,21 +100,21 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeApp();
         setupEventListeners();
     } catch (error) {
-        console.error('Initialization error:', error);
+        debugLog('Initialization error:', error);
         showError('Ошибка инициализации приложения');
     }
 });
 
 // Initialize Telegram WebApp
 function initializeApp() {
-    console.log('Initializing app...');
+    debugLog('Initializing app...');
     
     // Check if running in local development
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    console.log('Environment:', isLocal ? 'Local development' : 'Production');
+    debugLog('Environment:', isLocal ? 'Local development' : 'Production');
     
     if (isLocal) {
-        console.log('Local development mode detected');
+        debugLog('Local development mode detected');
         
         // Create mock Telegram object for local testing
         window.Telegram = window.Telegram || {};
@@ -41,22 +127,22 @@ function initializeApp() {
                 }
             },
             initData: 'mock_init_data_for_testing',
-            expand: function() { console.log('Mock: WebApp expanded'); },
+            expand: function() { debugLog('Mock: WebApp expanded'); },
             MainButton: {
-                setText: function(text) { console.log('Mock: MainButton text set to:', text); },
-                hide: function() { console.log('Mock: MainButton hidden'); },
-                show: function() { console.log('Mock: MainButton shown'); }
+                setText: function(text) { debugLog('Mock: MainButton text set to:', text); },
+                hide: function() { debugLog('Mock: MainButton hidden'); },
+                show: function() { debugLog('Mock: MainButton shown'); }
             },
             BackButton: {
-                hide: function() { console.log('Mock: BackButton hidden'); },
-                show: function() { console.log('Mock: BackButton shown'); }
+                hide: function() { debugLog('Mock: BackButton hidden'); },
+                show: function() { debugLog('Mock: BackButton shown'); }
             },
             showAlert: function(message, callback) { 
                 alert(message); 
                 if (callback) callback();
             },
-            close: function() { console.log('Mock: WebApp closed'); },
-            onEvent: function(event, callback) { console.log('Mock: Event listener added for:', event); }
+            close: function() { debugLog('Mock: WebApp closed'); },
+            onEvent: function(event, callback) { debugLog('Mock: Event listener added for:', event); }
         };
         
         tg = window.Telegram.WebApp;
@@ -65,6 +151,7 @@ function initializeApp() {
         tg = window.Telegram?.WebApp;
         
         if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
+            debugLog('Telegram data not available');
             showError('Приложение должно запускаться из Telegram');
             return;
         }
@@ -75,7 +162,7 @@ function initializeApp() {
     tg.MainButton.setText('Готово');
     tg.MainButton.hide();
     
-    console.log('Telegram WebApp initialized, checking user registration...');
+    debugLog('Telegram WebApp initialized, checking user registration...');
     
     // Check if user is registered
     checkUserRegistration();
@@ -83,7 +170,7 @@ function initializeApp() {
 
 // Setup event listeners
 function setupEventListeners() {
-    console.log('Setting up event listeners...');
+    debugLog('Setting up event listeners...');
     
     // Registration form
     const registrationForm = document.getElementById('registration-form');
@@ -154,9 +241,9 @@ function setupEventListeners() {
         uploadArea.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', handleFileSelect);
         
-        console.log('File upload handlers set up successfully');
+        debugLog('File upload handlers set up successfully');
     } else {
-        console.error('Upload area or file input not found');
+        debugLog('Upload area or file input not found');
     }
     
     // Modal close buttons
@@ -175,22 +262,22 @@ function setupEventListeners() {
         });
     });
     
-    console.log('Event listeners set up successfully');
+    debugLog('Event listeners set up successfully');
 }
 
 // Check if user is already registered
 async function checkUserRegistration() {
     try {
-        console.log('Checking user registration...');
+        debugLog('Checking user registration...');
         
         if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
-            console.error('Telegram data not available');
+            debugLog('Telegram data not available');
             showError('Ошибка инициализации Telegram');
             return;
         }
         
         const telegramId = tg.initDataUnsafe.user.id;
-        console.log('User ID:', telegramId);
+        debugLog('User ID:', telegramId);
         
         // Try backend first, fallback to mock mode if it fails
         try {
@@ -206,11 +293,13 @@ async function checkUserRegistration() {
             });
             
             const data = await response.json();
+            updateDebugApiResponse(data);
             
             if (data.success && data.user) {
                 // User is registered
                 currentUser = data.user;
                 console.log('User found from backend:', currentUser);
+                updateDebugInfo();
                 showMainMenu();
             } else {
                 // User needs to register
@@ -221,6 +310,7 @@ async function checkUserRegistration() {
             // Fallback to mock mode if backend is not available
             console.log('Backend not available, using mock mode for user check:', error);
             console.log('Mock: Checking user registration for ID:', telegramId);
+            updateDebugApiResponse({ error: error.message, mode: 'mock' });
             // Simulate that user is not registered for demo purposes
             setTimeout(() => {
                 console.log('Mock: User not found, showing registration');
@@ -228,7 +318,7 @@ async function checkUserRegistration() {
             }, 1000);
         }
     } catch (error) {
-        console.error('Error checking user registration:', error);
+        debugLog('Error checking user registration:', error);
         showError('Ошибка подключения к серверу');
     }
 }
@@ -238,7 +328,7 @@ async function handleRegistration(e) {
     e.preventDefault();
     
     try {
-        console.log('Handling registration...');
+        debugLog('Handling registration...');
         
         const classSelect = document.getElementById('class-select');
         const lastName = document.getElementById('last-name');
@@ -288,8 +378,8 @@ async function handleRegistration(e) {
             }
         } catch (error) {
             // Fallback to mock mode if backend is not available
-            console.log('Backend not available, using mock mode:', error);
-            console.log('Mock: Registering user:', userData);
+            debugLog('Backend not available, using mock mode:', error);
+            debugLog('Mock: Registering user:', userData);
             
             currentUser = userData;
             showModal('success', 'Регистрация прошла успешно! (демо режим)');
@@ -298,7 +388,7 @@ async function handleRegistration(e) {
             }, 2000);
         }
     } catch (error) {
-        console.error('Registration error:', error);
+        debugLog('Registration error:', error);
         showModal('error', 'Ошибка при регистрации');
     }
 }
@@ -320,7 +410,7 @@ function showMainMenu() {
         userClass.textContent = 'Не указан';
     }
     
-    console.log('showMainMenu: currentUser =', currentUser);
+    debugLog('showMainMenu: currentUser =', currentUser);
     
     showScreen('main');
 }
@@ -348,23 +438,23 @@ async function loadAssignments(type = 'current') {
             if (data.success) {
                 displayAssignments(data.assignments);
             } else {
-                console.log('Backend returned error, using mock data');
+                debugLog('Backend returned error, using mock data');
                 useMockAssignments(type);
             }
         } catch (error) {
             // Fallback to mock data if backend is not available
-            console.log('Backend not available, using mock data:', error);
+            debugLog('Backend not available, using mock data:', error);
             useMockAssignments(type);
         }
     } catch (error) {
-        console.error('Error loading assignments:', error);
+        debugLog('Error loading assignments:', error);
         useMockAssignments(type);
     }
 }
 
 // Use mock assignments data
 function useMockAssignments(type) {
-    console.log('Mock: Loading assignments for class:', currentUser?.class || 'Unknown', 'type:', type);
+    debugLog('Mock: Loading assignments for class:', currentUser?.class || 'Unknown', 'type:', type);
     
     const mockAssignments = type === 'current' ? [
                 {
@@ -437,7 +527,7 @@ async function handleHomeworkSubmission(e) {
         if (fileInput && fileInput.files.length > 0) {
             const file = fileInput.files[0];
             
-            console.log('File selected for submission:', file.name, file.size, file.type);
+            debugLog('File selected for submission:', file.name, file.size, file.type);
             
             if (file.size > 10 * 1024 * 1024) { // 10MB limit
                 showModal('error', 'Размер файла не должен превышать 10MB');
@@ -453,9 +543,9 @@ async function handleHomeworkSubmission(e) {
                 fileSize: file.size
             };
             
-            console.log('File data prepared for upload:', fileData.fileName, fileData.fileSize);
+            debugLog('File data prepared for upload:', fileData.fileName, fileData.fileSize);
         } else {
-            console.log('No file selected for submission');
+            debugLog('No file selected for submission');
         }
         
         // Try backend first, fallback to mock mode if it fails
@@ -484,8 +574,8 @@ async function handleHomeworkSubmission(e) {
             }
         } catch (error) {
             // Fallback to mock mode if backend is not available
-            console.log('Backend not available, using mock mode for homework submission:', error);
-            console.log('Mock: Submitting homework:', submissionData);
+            debugLog('Backend not available, using mock mode for homework submission:', error);
+            debugLog('Mock: Submitting homework:', submissionData);
             
             setTimeout(() => {
                 showModal('success', 'Домашнее задание успешно отправлено! (демо режим)');
@@ -494,7 +584,7 @@ async function handleHomeworkSubmission(e) {
             }, 1500);
         }
     } catch (error) {
-        console.error('Homework submission error:', error);
+        debugLog('Homework submission error:', error);
         showModal('error', 'Ошибка при отправке задания');
     }
 }
@@ -518,7 +608,7 @@ async function handleAddAssignment(e) {
     e.preventDefault();
     
     try {
-        console.log('Handling add assignment...');
+        debugLog('Handling add assignment...');
         
         const assignmentDate = document.getElementById('assignment-date');
         const assignmentClass = document.getElementById('assignment-class');
@@ -574,8 +664,8 @@ async function handleAddAssignment(e) {
             }
         } catch (error) {
             // Fallback to mock mode if backend is not available
-            console.log('Backend not available, using mock mode for assignment creation:', error);
-            console.log('Mock: Adding assignment:', assignmentData);
+            debugLog('Backend not available, using mock mode for assignment creation:', error);
+            debugLog('Mock: Adding assignment:', assignmentData);
             
             setTimeout(() => {
                 // Reset form
@@ -589,14 +679,14 @@ async function handleAddAssignment(e) {
             }, 1000);
         }
     } catch (error) {
-        console.error('Add assignment error:', error);
+        debugLog('Add assignment error:', error);
         showModal('error', 'Ошибка подключения к серверу');
     }
 }
 
 // Show specific screen
 function showScreen(screenName) {
-    console.log(`Switching to screen: ${screenName}`);
+    debugLog(`Switching to screen: ${screenName}`);
     
     // Hide all screens
     const screens = document.querySelectorAll('.screen');
@@ -621,7 +711,7 @@ function showScreen(screenName) {
             // prefillSubmissionForm will be called from event listener
         }
     } else {
-        console.error(`Screen not found: ${screenName}Screen`);
+        debugLog(`Screen not found: ${screenName}Screen`);
     }
 }
 
@@ -643,7 +733,7 @@ function formatDate(dateString) {
 
 // Show main menu with user info
 function showMainMenu() {
-    console.log('Showing main menu for user:', currentUser);
+    debugLog('Showing main menu for user:', currentUser);
     
     if (currentUser) {
         // Update user info display
@@ -676,8 +766,8 @@ function showMainMenu() {
 
 // Prefill submission form with user data
 function prefillSubmissionForm() {
-    console.log('Prefilling submission form...');
-    console.log('Current user data:', currentUser);
+    debugLog('Prefilling submission form...');
+    debugLog('Current user data:', currentUser);
     
     if (currentUser) {
         const classField = document.getElementById('submit-class');
@@ -686,24 +776,24 @@ function prefillSubmissionForm() {
         
         if (classField) {
             classField.value = currentUser.class || '';
-            console.log('Set class field to:', currentUser.class);
+            debugLog('Set class field to:', currentUser.class);
         }
         if (lastNameField) {
             lastNameField.value = currentUser.lastName || '';
-            console.log('Set lastName field to:', currentUser.lastName);
+            debugLog('Set lastName field to:', currentUser.lastName);
         }
         if (firstNameField) {
             firstNameField.value = currentUser.firstName || '';
-            console.log('Set firstName field to:', currentUser.firstName);
+            debugLog('Set firstName field to:', currentUser.firstName);
         }
     } else {
-        console.log('No currentUser data available for prefilling');
+        debugLog('No currentUser data available for prefilling');
     }
 }
 
 // Modal functions
 function showModal(type, message) {
-    console.log(`Showing ${type} modal:`, message);
+    debugLog(`Showing ${type} modal:`, message);
     
     const modal = document.getElementById(`${type}Modal`);
     const messageElement = document.getElementById(`${type}Message`);
@@ -756,10 +846,10 @@ function handleFileSelect(e) {
     const files = e.target.files;
     if (files.length > 0) {
         const file = files[0];
-        console.log('File selected:', file.name, file.size, file.type);
+        debugLog('File selected:', file.name, file.size, file.type);
         
         // Validate file size (10MB limit)
-        if (file.size > 10 * 1024 * 1024) {
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
             showModal('error', 'Размер файла не должен превышать 10MB');
             return;
         }
@@ -800,7 +890,7 @@ function updateFileUploadUI(file = null) {
 
 // Assignment tab switching
 function switchAssignmentTab(type) {
-    console.log(`Switching to ${type} assignments tab`);
+    debugLog(`Switching to ${type} assignments tab`);
     
     // Update tab buttons
     const tabs = document.querySelectorAll('.tab-btn');
@@ -819,12 +909,12 @@ function switchAssignmentTab(type) {
 if (typeof tg !== 'undefined' && tg && tg.onEvent) {
     tg.onEvent('mainButtonClicked', function() {
         // Handle main button click if needed
-        console.log('Main button clicked');
+        debugLog('Main button clicked');
     });
 
     tg.onEvent('backButtonClicked', function() {
         // Handle back button
-        console.log('Back button clicked, current screen:', currentScreen);
+        debugLog('Back button clicked, current screen:', currentScreen);
         switch (currentScreen) {
             case 'assignments':
             case 'submission':

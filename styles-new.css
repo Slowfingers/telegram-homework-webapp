@@ -908,6 +908,92 @@ body {
     box-shadow: var(--shadow-light);
 }
 
+/* Debug Panel Styles */
+.debug-panel {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 300px;
+    background: rgba(0, 0, 0, 0.9);
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    z-index: 10000;
+    display: none;
+}
+
+.debug-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: rgba(0, 255, 0, 0.1);
+    border-bottom: 1px solid #00ff00;
+}
+
+.debug-header h4 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.debug-toggle {
+    background: none;
+    border: none;
+    color: #ff0000;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.debug-content {
+    padding: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.debug-section {
+    margin-bottom: 15px;
+}
+
+.debug-section strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #ffff00;
+}
+
+.debug-section pre {
+    background: rgba(0, 255, 0, 0.1);
+    padding: 8px;
+    border-radius: 4px;
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.debug-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #00ff00;
+    color: #000;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 255, 0, 0.3);
+}
+
+.debug-btn:hover {
+    background: #00cc00;
+    transform: scale(1.1);
+}
+
 /* Responsive Design */
 @media (max-width: 480px) {
     .container {
