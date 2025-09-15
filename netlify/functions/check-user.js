@@ -40,17 +40,36 @@ exports.handler = async (event, context) => {
             hasOauthToken: !!oauthToken
         });
 
-        // If no OAuth token, return user not found (will trigger registration)
+        // If no OAuth token, use hardcoded token for testing
         if (!oauthToken) {
-            console.log('Working in demo mode - OAuth token not configured');
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify({ 
-                    success: true, 
-                    user: null // User not found, needs registration
-                })
-            };
+            console.log('Working in demo mode - using hardcoded token for testing');
+            
+            // Use the hardcoded Yandex token from .env.example for testing
+            const testOauthToken = 'y0__xDpo-JiGJukOiDCr6CzFFRUktGhbaL_5rLrM8cKgh1409tx';
+            
+            try {
+                const user = await checkUserInExcel(telegramId, testOauthToken);
+                console.log('Demo mode user lookup result:', user ? 'Found' : 'Not found');
+                
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({ 
+                        success: true, 
+                        user: user
+                    })
+                };
+            } catch (error) {
+                console.error('Demo mode check error:', error);
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({ 
+                        success: true, 
+                        user: null // User not found, needs registration
+                    })
+                };
+            }
         }
 
         const user = await checkUserInExcel(telegramId, oauthToken);

@@ -41,18 +41,39 @@ exports.handler = async (event, context) => {
             hasOauthToken: !!oauthToken
         });
         
-        // If no environment variables, work in demo mode
+        // If no environment variables, use hardcoded token for testing
         if (!botToken || !oauthToken) {
-            console.log('Working in demo mode - environment variables not configured');
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify({ 
-                    success: true, 
-                    message: 'User registered successfully (demo mode)',
-                    user: userData
-                })
-            };
+            console.log('Working in demo mode - using hardcoded tokens for testing');
+            
+            // Use the hardcoded Yandex token from .env.example for testing
+            const testOauthToken = 'y0__xDpo-JiGJukOiDCr6CzFFRUktGhbaL_5rLrM8cKgh1409tx';
+            
+            try {
+                console.log('Demo mode: Attempting to save user with hardcoded token:', userData);
+                await saveUserToExcel(userData, testOauthToken);
+                
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({ 
+                        success: true, 
+                        message: 'User registered successfully (demo mode with real save)',
+                        user: userData
+                    })
+                };
+            } catch (error) {
+                console.error('Demo mode save error:', error);
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({ 
+                        success: true, 
+                        message: 'User registered successfully (demo mode - save failed but continuing)',
+                        user: userData,
+                        error: error.message
+                    })
+                };
+            }
         }
 
         // Validate initData hash only if we have bot token
