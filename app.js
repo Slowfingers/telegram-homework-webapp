@@ -88,22 +88,7 @@ function setupEventListeners() {
     // Registration form
     const registrationForm = document.getElementById('registration-form');
     if (registrationForm) {
-        console.log('Found registration form, adding event listener');
         registrationForm.addEventListener('submit', handleRegistration);
-    } else {
-        console.error('Registration form not found!');
-    }
-    
-    // Also add click handler to registration button directly
-    const registerBtn = document.querySelector('#registration-form button[type="submit"]');
-    if (registerBtn) {
-        console.log('Found registration button, adding click listener');
-        registerBtn.addEventListener('click', (e) => {
-            console.log('Registration button clicked!');
-            // Let the form handle the submit event
-        });
-    } else {
-        console.error('Registration button not found!');
     }
     
     // Main menu buttons
@@ -252,8 +237,6 @@ async function handleRegistration(e) {
     
     try {
         console.log('Handling registration...');
-        console.log('Event object:', e);
-        console.log('Form element:', e.target);
         
         const classSelect = document.getElementById('class-select');
         const lastName = document.getElementById('last-name');
@@ -272,12 +255,9 @@ async function handleRegistration(e) {
         };
         
         if (!userData.class || !userData.lastName || !userData.firstName) {
-            console.log('Validation failed:', userData);
             showModal('error', 'Пожалуйста, заполните все поля');
             return;
         }
-        
-        console.log('User data validated:', userData);
         
         // Try backend first, fallback to mock mode if it fails
         try {

@@ -75,6 +75,7 @@ exports.handler = async (event, context) => {
         const user = await checkUserInExcel(telegramId, oauthToken);
         
         console.log('User lookup result:', user ? 'Found' : 'Not found');
+        console.log('User data found:', user);
         
         return {
             statusCode: 200,
@@ -138,9 +139,15 @@ async function checkUserInExcel(telegramId, oauthToken) {
     try {
         const studentsFilePath = '/Домашки/Students.csv';
         
+        console.log('Checking user in Excel file:', telegramId);
+        
         // Try to read existing file
         const existingData = await readExcelFromYandexDisk(studentsFilePath, oauthToken);
+        console.log('File read successfully, size:', existingData.length);
+        
         const students = parseCSV(existingData);
+        console.log('Students parsed from CSV:', students.length);
+        console.log('Raw CSV content preview:', existingData.toString().substring(0, 500));
         
         // Find user by Telegram ID (try different column name variations)
         const user = students.find(s => 
@@ -150,11 +157,16 @@ async function checkUserInExcel(telegramId, oauthToken) {
         );
         
         console.log('Looking for user with ID:', telegramId);
-        console.log('Available students:', students.map(s => ({ id: s['Telegram ID'] || s['telegramId'], name: s['Фамилия'] || s['lastName'] })));
+        console.log('Available students:', students.map(s => ({ 
+            id: s['Telegram ID'] || s['telegramId'] || s['ID'], 
+            name: s['Фамилия'] || s['lastName'],
+            class: s['Класс'] || s['class']
+        })));
         
         if (user) {
+            console.log('User found in CSV:', user);
             return {
-                telegramId: parseInt(user['Telegram ID'] || user['telegramId']),
+                telegramId: parseInt(user['Telegram ID'] || user['telegramId'] || user['ID']),
                 class: user['Класс'] || user['class'],
                 lastName: user['Фамилия'] || user['lastName'],
                 firstName: user['Имя'] || user['firstName'],
@@ -162,9 +174,11 @@ async function checkUserInExcel(telegramId, oauthToken) {
             };
         }
         
-        return null; // User not found
+        console.log('User not found in CSV');
+        return null;
     } catch (error) {
         console.log('User check error (file may not exist yet):', error.message);
-        return null; // User not found or file doesn't exist
+        console.log('Full error:', error);
+        return null;
     }
 }

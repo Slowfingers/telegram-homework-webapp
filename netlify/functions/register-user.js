@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { readExcelFromYandexDisk, uploadExcelToYandexDisk, createStudentsExcel, parseCSV, appendToCSV } = require('./excel-utils');
+const { readExcelFromYandexDisk, uploadExcelToYandexDisk, createStudentsExcel, parseCSV } = require('./excel-utils');
 
 // Telegram Bot Token (set in Netlify environment variables)
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -111,49 +111,62 @@ exports.handler = async (event, context) => {
     }
 };
 
-// Save user to Excel file on Yandex Disk using append-only approach
+// Save user to Excel file on Yandex Disk
 async function saveUserToExcel(userData, oauthToken) {
     const studentsFilePath = '/Домашки/Students.csv';
+    let students = [];
     
-    console.log('Attempting to save user to Excel using append method:', userData.telegramId);
+    console.log('Attempting to save user to Excel:', userData.telegramId);
     
     try {
-        // First check if user already exists
-        try {
-            const existingData = await readExcelFromYandexDisk(studentsFilePath, oauthToken);
-            const students = parseCSV(existingData);
-            
-            const existingUser = students.find(s => 
-                s['Telegram ID'] === userData.telegramId.toString() ||
-                s['telegramId'] === userData.telegramId.toString()
-            );
-            
-            if (existingUser) {
-                console.log('User already registered:', userData.telegramId);
-                return;
-            }
-        } catch (error) {
-            console.log('File may not exist yet, will create new one');
+        // Try to read existing file
+        console.log('Reading existing students file...');
+        const existingData = await readExcelFromYandexDisk(studentsFilePath, oauthToken);
+        students = parseCSV(existingData);
+        console.log('Existing students found:', students.length);
+        console.log('Existing students data:', students.map(s => ({ 
+            id: s['Telegram ID'] || s['telegramId'], 
+            name: s['Фамилия'] || s['lastName'],
+            class: s['Класс'] || s['class']
+        })));
+        
+        // Check if user already exists
+        const existingUser = students.find(s => 
+            s['Telegram ID'] === userData.telegramId.toString() ||
+            s['telegramId'] === userData.telegramId.toString()
+        );
+        if (existingUser) {
+            console.log('User already registered:', userData.telegramId);
+            return;
         }
-        
-        // Prepare new user data for append
-        const newRowData = {
-            telegramId: userData.telegramId,
-            class: userData.class,
-            lastName: userData.lastName,
-            firstName: userData.firstName,
-            registrationDate: new Date().toISOString().split('T')[0]
-        };
-        
-        // Use append-only method to add user
-        await appendToCSV(studentsFilePath, newRowData, oauthToken);
-        
-        console.log('User saved to Excel successfully using append method:', userData.telegramId);
-        
     } catch (error) {
-        console.error('Error saving user with append method:', error);
-        throw error;
+        console.log('File read error (creating new file):', error.message);
+        console.log('Error details:', error);
+        students = []; // Start with empty array
     }
+    
+    // Add new user
+    const newStudent = {
+        telegramId: userData.telegramId,
+        class: userData.class,
+        lastName: userData.lastName,
+        firstName: userData.firstName,
+        registrationDate: new Date().toISOString().split('T')[0]
+    };
+    
+    // Add to existing students array
+    students.push(newStudent);
+    
+    console.log('Adding new student. Total students now:', students.length);
+    console.log('Students array:', students.map(s => ({ id: s.telegramId, name: s.lastName })));
+    
+    // Create updated Excel file
+    const excelBuffer = createStudentsExcel(students);
+    
+    // Upload to Yandex Disk
+    await uploadExcelToYandexDisk(studentsFilePath, excelBuffer, oauthToken);
+    
+    console.log('User saved to Excel successfully:', userData.telegramId);
 }
 
 // Validate Telegram WebApp data
