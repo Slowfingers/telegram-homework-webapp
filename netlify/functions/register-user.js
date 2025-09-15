@@ -41,23 +41,23 @@ exports.handler = async (event, context) => {
             hasOauthToken: !!oauthToken
         });
         
-        // If no environment variables, use hardcoded token for testing
+        // If no environment variables, use hardcoded token and alternative save method
         if (!botToken || !oauthToken) {
-            console.log('Working in demo mode - using hardcoded tokens for testing');
+            console.log('Working in demo mode - using alternative save method');
             
             // Use the hardcoded Yandex token from .env.example for testing
             const testOauthToken = 'y0__xDpo-JiGJukOiDCr6CzFFRUktGhbaL_5rLrM8cKgh1409tx';
             
             try {
-                console.log('Demo mode: Attempting to save user with hardcoded token:', userData);
-                await saveUserToExcel(userData, testOauthToken);
+                console.log('Demo mode: Attempting alternative save method for user:', userData);
+                await saveUserAlternative(userData, testOauthToken);
                 
                 return {
                     statusCode: 200,
                     headers,
                     body: JSON.stringify({ 
                         success: true, 
-                        message: 'User registered successfully (demo mode with real save)',
+                        message: 'User registered successfully (demo mode with alternative save)',
                         user: userData
                     })
                 };
@@ -167,6 +167,45 @@ async function saveUserToExcel(userData, oauthToken) {
     await uploadExcelToYandexDisk(studentsFilePath, excelBuffer, oauthToken);
     
     console.log('User saved to Excel successfully:', userData.telegramId);
+}
+
+// Alternative save method - saves each user to individual file
+async function saveUserAlternative(userData, oauthToken) {
+    const timestamp = Date.now();
+    const userFilePath = `/Домашки/Users/user_${userData.telegramId}_${timestamp}.json`;
+    
+    console.log('Alternative save: Creating individual file for user:', userData.telegramId);
+    
+    try {
+        // Create user data object
+        const userRecord = {
+            telegramId: userData.telegramId,
+            class: userData.class,
+            lastName: userData.lastName,
+            firstName: userData.firstName,
+            registrationDate: new Date().toISOString().split('T')[0],
+            timestamp: timestamp
+        };
+        
+        const userBuffer = Buffer.from(JSON.stringify(userRecord, null, 2), 'utf-8');
+        
+        // Upload individual user file
+        await uploadExcelToYandexDisk(userFilePath, userBuffer, oauthToken);
+        
+        console.log('Alternative save: User file created successfully:', userFilePath);
+        
+        // Also try to update the main CSV file
+        try {
+            await saveUserToExcel(userData, oauthToken);
+            console.log('Alternative save: Also updated main CSV file');
+        } catch (csvError) {
+            console.log('Alternative save: CSV update failed, but individual file saved:', csvError.message);
+        }
+        
+    } catch (error) {
+        console.error('Alternative save failed:', error);
+        throw error;
+    }
 }
 
 // Validate Telegram WebApp data

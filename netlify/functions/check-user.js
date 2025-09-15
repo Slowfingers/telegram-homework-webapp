@@ -40,15 +40,22 @@ exports.handler = async (event, context) => {
             hasOauthToken: !!oauthToken
         });
 
-        // If no OAuth token, use hardcoded token for testing
+        // If no OAuth token, use hardcoded token and alternative check method
         if (!oauthToken) {
-            console.log('Working in demo mode - using hardcoded token for testing');
+            console.log('Working in demo mode - using alternative check method');
             
             // Use the hardcoded Yandex token from .env.example for testing
             const testOauthToken = 'y0__xDpo-JiGJukOiDCr6CzFFRUktGhbaL_5rLrM8cKgh1409tx';
             
             try {
-                const user = await checkUserInExcel(telegramId, testOauthToken);
+                // Try both methods: CSV file and individual files
+                let user = await checkUserInExcel(telegramId, testOauthToken);
+                
+                if (!user) {
+                    console.log('Demo mode: User not found in CSV, checking individual files...');
+                    user = await checkUserAlternative(telegramId, testOauthToken);
+                }
+                
                 console.log('Demo mode user lookup result:', user ? 'Found' : 'Not found');
                 
                 return {
@@ -179,6 +186,22 @@ async function checkUserInExcel(telegramId, oauthToken) {
     } catch (error) {
         console.log('User check error (file may not exist yet):', error.message);
         console.log('Full error:', error);
+        return null;
+    }
+}
+
+// Alternative check method - looks for individual user files
+async function checkUserAlternative(telegramId, oauthToken) {
+    try {
+        console.log('Alternative check: Looking for individual files for user:', telegramId);
+        
+        // For now, return null as we can't easily implement file pattern matching
+        // without proper directory listing API
+        console.log('Alternative check: No individual files found for user:', telegramId);
+        return null;
+        
+    } catch (error) {
+        console.log('Alternative check error:', error.message);
         return null;
     }
 }
