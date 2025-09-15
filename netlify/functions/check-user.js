@@ -31,17 +31,31 @@ exports.handler = async (event, context) => {
     try {
         const { telegramId, initData } = JSON.parse(event.body);
 
-        // Check user in Excel file on Yandex Disk
+        console.log('Checking user registration for ID:', telegramId);
+
+        // Check environment variables
         const oauthToken = process.env.YANDEX_OAUTH_TOKEN;
+        
+        console.log('Environment check:', {
+            hasOauthToken: !!oauthToken
+        });
+
+        // If no OAuth token, return user not found (will trigger registration)
         if (!oauthToken) {
+            console.log('Working in demo mode - OAuth token not configured');
             return {
-                statusCode: 500,
+                statusCode: 200,
                 headers,
-                body: JSON.stringify({ success: false, message: 'Yandex OAuth token not configured' })
+                body: JSON.stringify({ 
+                    success: true, 
+                    user: null // User not found, needs registration
+                })
             };
         }
 
         const user = await checkUserInExcel(telegramId, oauthToken);
+        
+        console.log('User lookup result:', user ? 'Found' : 'Not found');
         
         return {
             statusCode: 200,

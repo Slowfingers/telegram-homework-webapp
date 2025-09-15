@@ -24,7 +24,10 @@ function initializeApp() {
     console.log('Initializing app...');
     
     // Check if running in local development
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    console.log('Environment:', isLocal ? 'Local development' : 'Production');
+    
+    if (isLocal) {
         console.log('Local development mode detected');
         
         // Create mock Telegram object for local testing
