@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const multipart = require('lambda-multipart-parser');
+const { readExcelFromYandexDisk, uploadExcelToYandexDisk, createHomeworkTrackingExcel, parseCSV } = require('./excel-utils');
 
 // Telegram Bot Token (set in Netlify environment variables)
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -76,13 +76,24 @@ exports.handler = async (event, context) => {
                 submissionDate: new Date().toISOString()
             });
 
+            // Save homework submission to Yandex Disk
+            const oauthToken = process.env.YANDEX_OAUTH_TOKEN;
+            if (!oauthToken) {
+                return {
+                    statusCode: 500,
+                    headers,
+                    body: JSON.stringify({ success: false, message: 'Yandex OAuth token not configured' })
+                };
+            }
+
+            await saveHomeworkSubmission(submissionData, oauthToken);
+            
             return {
                 statusCode: 200,
                 headers,
-                body: JSON.stringify({
-                    success: true,
-                    message: 'Homework submitted successfully',
-                    filePath: uploadResult.filePath
+                body: JSON.stringify({ 
+                    success: true, 
+                    message: 'Homework submitted successfully'
                 })
             };
         } else {

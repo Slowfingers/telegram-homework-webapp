@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { readExcelFromYandexDisk, uploadExcelToYandexDisk, createStudentsExcel, parseCSV } = require('./excel-utils');
 
 // Telegram Bot Token (set in Netlify environment variables)
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -7,7 +8,7 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const YANDEX_OAUTH_TOKEN = process.env.YANDEX_OAUTH_TOKEN;
 
 exports.handler = async (event, context) => {
-    // Enable CORS
+    // Set CORS headers
     const headers = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
@@ -27,19 +28,20 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        const { telegramId, class: userClass, lastName, firstName, initData } = JSON.parse(event.body);
-
-        // Validate required fields
-        if (!telegramId || !userClass || !lastName || !firstName) {
+        const { telegramId, initData, userData } = JSON.parse(event.body);
+        
+        // Validate Telegram data
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (!botToken) {
             return {
-                statusCode: 400,
+                statusCode: 500,
                 headers,
-                body: JSON.stringify({ success: false, message: 'Missing required fields' })
+                body: JSON.stringify({ success: false, message: 'Bot token not configured' })
             };
         }
 
-        // Validate Telegram data
-        if (!validateTelegramData(initData)) {
+        // Validate initData hash
+        if (!validateTelegramData(initData, botToken)) {
             return {
                 statusCode: 401,
                 headers,
@@ -47,34 +49,32 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // Save user to Yandex Tables
-        const success = await saveUserToDatabase({
-            telegramId,
-            class: userClass,
-            lastName,
-            firstName,
-            registrationDate: new Date().toISOString()
-        });
-
-        if (success) {
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify({
-                    success: true,
-                    message: 'User registered successfully'
-                })
-            };
-        } else {
+        // Save user data to Excel file on Yandex Disk
+        const oauthToken = process.env.YANDEX_OAUTH_TOKEN;
+        if (!oauthToken) {
             return {
                 statusCode: 500,
                 headers,
-                body: JSON.stringify({ success: false, message: 'Failed to register user' })
+                body: JSON.stringify({ success: false, message: 'Yandex OAuth token not configured' })
             };
         }
 
+        await saveUserToExcel(userData, oauthToken);
+        
+        console.log('User registered successfully:', userData);
+        
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ 
+                success: true, 
+                message: 'User registered successfully',
+                user: userData
+            })
+        };
+
     } catch (error) {
-        console.error('Error in register-user:', error);
+        console.error('Registration error:', error);
         return {
             statusCode: 500,
             headers,
@@ -82,6 +82,47 @@ exports.handler = async (event, context) => {
         };
     }
 };
+
+// Save user to Excel file on Yandex Disk
+async function saveUserToExcel(userData, oauthToken) {
+    const studentsFilePath = '/Домашки/Students.csv';
+    let students = [];
+    
+    try {
+        // Try to read existing file
+        const existingData = await readExcelFromYandexDisk(studentsFilePath, oauthToken);
+        students = parseCSV(existingData);
+        
+        // Check if user already exists
+        const existingUser = students.find(s => s['Telegram ID'] === userData.telegramId.toString());
+        if (existingUser) {
+            console.log('User already registered:', userData.telegramId);
+            return;
+        }
+    } catch (error) {
+        console.log('Creating new students file:', error.message);
+    }
+    
+    // Add new user
+    const newStudent = {
+        id: students.length + 1,
+        telegramId: userData.telegramId,
+        class: userData.class,
+        lastName: userData.lastName,
+        firstName: userData.firstName,
+        registrationDate: new Date().toISOString().split('T')[0]
+    };
+    
+    students.push(newStudent);
+    
+    // Create updated Excel file
+    const excelBuffer = createStudentsExcel(students);
+    
+    // Upload to Yandex Disk
+    await uploadExcelToYandexDisk(studentsFilePath, excelBuffer, oauthToken);
+    
+    console.log('User saved to Excel:', userData.telegramId);
+}
 
 // Validate Telegram WebApp data
 function validateTelegramData(initData) {

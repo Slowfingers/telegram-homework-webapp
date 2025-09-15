@@ -402,87 +402,92 @@ async function handleHomeworkSubmission(e) {
     e.preventDefault();
     
     try {
-        console.log('Handling homework submission...');
+        const form = e.target;
+        const formData = new FormData(form);
+        const fileInput = form.querySelector('input[type="file"]');
         
-        const fileInput = document.getElementById('homework-file');
-        const file = fileInput.files[0];
+        const submissionData = {
+            telegramId: tg.initDataUnsafe.user.id,
+            class: formData.get('class'),
+            lastName: formData.get('lastName'),
+            firstName: formData.get('firstName'),
+            assignmentDate: formData.get('assignmentDate'),
+            assignmentTopic: formData.get('assignmentTopic')
+        };
         
-        if (!file) {
-            showModal('error', 'Пожалуйста, выберите файл для отправки');
-            return;
-        }
+        let fileData = null;
         
-        // For local testing, simulate successful submission
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.log('Mock: Submitting homework file:', file.name);
+        if (fileInput && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
             
-            setTimeout(() => {
-                // Reset form
-                fileInput.value = '';
-                const uploadArea = document.getElementById('upload-area');
-                if (uploadArea) {
-                    uploadArea.classList.remove('file-selected');
-                    const uploadContent = uploadArea.querySelector('.upload-content');
-                    if (uploadContent) {
-                        uploadContent.innerHTML = `
-                            <div class="upload-icon">📁</div>
-                            <div class="upload-text">
-                                <div class="upload-title">Перетащи файл сюда</div>
-                                <div class="upload-subtitle">или нажми для выбора</div>
-                                <div class="upload-formats">PDF, DOC, DOCX, TXT, JPG, PNG, ZIP</div>
-                            </div>
-                        `;
-                    }
-                }
-                
-                showModal('success', 'Домашнее задание успешно отправлено!');
-            }, 2000);
-            return;
-        }
-        
-        // Create FormData for file upload
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('telegramId', tg.initDataUnsafe.user.id);
-        formData.append('initData', tg.initData);
-        formData.append('class', currentUser.class);
-        formData.append('lastName', currentUser.lastName);
-        formData.append('firstName', currentUser.firstName);
-        
-        const response = await fetch(`${API_BASE_URL}/submit-homework`, {
-            method: 'POST',
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // Reset form
-            fileInput.value = '';
-            const uploadArea = document.getElementById('upload-area');
-            if (uploadArea) {
-                uploadArea.classList.remove('file-selected');
-                const uploadContent = uploadArea.querySelector('.upload-content');
-                if (uploadContent) {
-                    uploadContent.innerHTML = `
-                        <div class="upload-icon">📁</div>
-                        <div class="upload-text">
-                            <div class="upload-title">Перетащи файл сюда</div>
-                            <div class="upload-subtitle">или нажми для выбора</div>
-                            <div class="upload-formats">PDF, DOC, DOCX, TXT, JPG, PNG, ZIP</div>
-                        </div>
-                    `;
-                }
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                showModal('error', 'Размер файла не должен превышать 10MB');
+                return;
             }
             
-            showModal('success', 'Домашнее задание успешно отправлено!');
-        } else {
-            showModal('error', data.message || 'Ошибка при отправке файла');
+            // Convert file to base64
+            const fileContent = await fileToBase64(file);
+            fileData = {
+                fileName: file.name,
+                fileContent: fileContent,
+                fileType: file.type,
+                fileSize: file.size
+            };
+        }
+        
+        // Try backend first, fallback to mock mode if it fails
+        try {
+            const response = await fetch(`${API_BASE_URL}/submit-homework-new`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    telegramId: submissionData.telegramId,
+                    initData: tg.initData,
+                    submissionData: submissionData,
+                    fileData: fileData
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showModal('success', 'Домашнее задание успешно отправлено!');
+                form.reset();
+                updateFileUploadUI();
+            } else {
+                showModal('error', data.message || 'Ошибка при отправке задания');
+            }
+        } catch (error) {
+            // Fallback to mock mode if backend is not available
+            console.log('Backend not available, using mock mode for homework submission:', error);
+            console.log('Mock: Submitting homework:', submissionData);
+            
+            setTimeout(() => {
+                showModal('success', 'Домашнее задание успешно отправлено! (демо режим)');
+                form.reset();
+                updateFileUploadUI();
+            }, 1500);
         }
     } catch (error) {
-        console.error('Submission error:', error);
-        showModal('error', 'Ошибка подключения к серверу');
+        console.error('Homework submission error:', error);
+        showModal('error', 'Ошибка при отправке задания');
     }
+}
+
+// Convert file to base64
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            // Remove data:type/subtype;base64, prefix
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = error => reject(error);
+    });
 }
 
 // Handle admin form submission

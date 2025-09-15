@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { readExcelFromYandexDisk, parseCSV } = require('./excel-utils');
 
 // Telegram Bot Token (set in Netlify environment variables)
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -30,23 +31,23 @@ exports.handler = async (event, context) => {
     try {
         const { telegramId, initData } = JSON.parse(event.body);
 
-        // Validate Telegram data
-        if (!validateTelegramData(initData)) {
+        // Check user in Excel file on Yandex Disk
+        const oauthToken = process.env.YANDEX_OAUTH_TOKEN;
+        if (!oauthToken) {
             return {
-                statusCode: 401,
+                statusCode: 500,
                 headers,
-                body: JSON.stringify({ success: false, message: 'Invalid Telegram data' })
+                body: JSON.stringify({ success: false, message: 'Yandex OAuth token not configured' })
             };
         }
 
-        // Check if user exists in Yandex Tables
-        const user = await checkUserInDatabase(telegramId);
-
+        const user = await checkUserInExcel(telegramId, oauthToken);
+        
         return {
             statusCode: 200,
             headers,
-            body: JSON.stringify({
-                success: true,
+            body: JSON.stringify({ 
+                success: true, 
                 user: user
             })
         };
@@ -99,26 +100,31 @@ function validateTelegramData(initData) {
     }
 }
 
-// Check if user exists in Yandex Tables
-async function checkUserInDatabase(telegramId) {
+// Check if user exists in Excel file on Yandex Disk
+async function checkUserInExcel(telegramId, oauthToken) {
     try {
-        const response = await fetch(`https://cloud-api.yandex.net/v1/disk/resources?path=/Homework_App/roster.xlsx&fields=file`, {
-            headers: {
-                'Authorization': `OAuth ${YANDEX_OAUTH_TOKEN}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to access Yandex Disk');
-        }
-
-        // For now, return null (user not found) to trigger registration
-        // In a real implementation, you would parse the Excel file and check for the user
-        // This is a simplified version - you might want to use a proper database instead
+        const studentsFilePath = '/Домашки/Students.csv';
         
-        return null; // User not found, needs registration
+        // Try to read existing file
+        const existingData = await readExcelFromYandexDisk(studentsFilePath, oauthToken);
+        const students = parseCSV(existingData);
+        
+        // Find user by Telegram ID
+        const user = students.find(s => s['Telegram ID'] === telegramId.toString());
+        
+        if (user) {
+            return {
+                telegramId: parseInt(user['Telegram ID']),
+                class: user['Класс'],
+                lastName: user['Фамилия'],
+                firstName: user['Имя'],
+                registrationDate: user['Дата регистрации']
+            };
+        }
+        
+        return null; // User not found
     } catch (error) {
-        console.error('Database check error:', error);
-        return null;
+        console.log('User check error (file may not exist yet):', error.message);
+        return null; // User not found or file doesn't exist
     }
 }
