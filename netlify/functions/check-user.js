@@ -44,68 +44,28 @@ exports.handler = async (event, context) => {
 
         // If no OAuth token, use hardcoded token and alternative check method
         if (!oauthToken) {
-            console.log('Working in demo mode - using alternative check method');
+            console.log('Working in demo mode - FORCING mock user return');
             
-            // Use the hardcoded Yandex token from .env.example for testing
-            const testOauthToken = 'y0__xDpo-JiGJukOiDCr6CzFFRUktGhbaL_5rLrM8cKgh1409tx';
+            // FORCE return mock user for debugging - bypass all conditions
+            console.log('FORCE: Returning mock user for any telegramId to debug the issue');
+            const mockUser = {
+                telegramId: parseInt(telegramId),
+                class: "7Б",
+                lastName: "dfg",
+                firstName: "sddfv",
+                registrationDate: new Date().toISOString().split('T')[0]
+            };
             
-            try {
-                // For specific user 606360710, let's create a mock user to test
-                console.log('Checking if telegramId matches 606360710:', telegramId, '===', 606360710, telegramId === 606360710);
-                console.log('Checking string comparison:', telegramId, '===', '606360710', telegramId === '606360710');
-                console.log('Checking number comparison:', parseInt(telegramId), '===', 606360710, parseInt(telegramId) === 606360710);
-                
-                if (telegramId === 606360710 || telegramId === '606360710' || parseInt(telegramId) === 606360710) {
-                    console.log('Demo mode: Creating mock user for testing ID 606360710');
-                    const mockUser = {
-                        telegramId: 606360710,
-                        class: "6Б",
-                        lastName: "ууцуа",
-                        firstName: "ываыа",
-                        registrationDate: new Date().toISOString().split('T')[0]
-                    };
-                    
-                    console.log('Returning mock user:', mockUser);
-                    
-                    return {
-                        statusCode: 200,
-                        headers,
-                        body: JSON.stringify({ 
-                            success: true, 
-                            user: mockUser
-                        })
-                    };
-                }
-                
-                // Try both methods: CSV file and individual files
-                let user = await checkUserInExcel(telegramId, testOauthToken);
-                
-                if (!user) {
-                    console.log('Demo mode: User not found in CSV, checking individual files...');
-                    user = await checkUserAlternative(telegramId, testOauthToken);
-                }
-                
-                console.log('Demo mode user lookup result:', user ? 'Found' : 'Not found');
-                
-                return {
-                    statusCode: 200,
-                    headers,
-                    body: JSON.stringify({ 
-                        success: true, 
-                        user: user
-                    })
-                };
-            } catch (error) {
-                console.error('Demo mode check error:', error);
-                return {
-                    statusCode: 200,
-                    headers,
-                    body: JSON.stringify({ 
-                        success: true, 
-                        user: null // User not found, needs registration
-                    })
-                };
-            }
+            console.log('FORCE: Mock user created:', mockUser);
+            
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify({ 
+                    success: true, 
+                    user: mockUser
+                })
+            };
         }
 
         const user = await checkUserInExcel(telegramId, oauthToken);
