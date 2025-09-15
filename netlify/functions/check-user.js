@@ -35,28 +35,53 @@ exports.handler = async (event, context) => {
         console.log('telegramId type:', typeof telegramId);
         console.log('telegramId value:', telegramId);
 
-        // FORCE MOCK USER RETURN - BYPASS ALL LOGIC FOR DEBUGGING
-        console.log('=== FORCE MOCK USER DEBUG ===');
-        console.log('Received telegramId:', telegramId, 'type:', typeof telegramId);
-        console.log('Environment variables available:', Object.keys(process.env).filter(key => key.includes('YANDEX')));
-        
+        // Check environment variables
         const oauthToken = process.env.YANDEX_OAUTH_TOKEN;
-        console.log('OAuth token exists:', !!oauthToken);
-        console.log('OAuth token length:', oauthToken ? oauthToken.length : 0);
         
-        // ALWAYS return mock user regardless of environment
-        console.log('FORCING mock user return for debugging...');
+        console.log('Environment check:', {
+            hasOauthToken: !!oauthToken,
+            oauthTokenLength: oauthToken ? oauthToken.length : 0,
+            telegramId: telegramId,
+            telegramIdType: typeof telegramId
+        });
+
+        // Now that we have environment variables, try real user lookup first
+        if (oauthToken) {
+            console.log('Using production mode with OAuth token');
+            
+            try {
+                const user = await checkUserInExcel(telegramId, oauthToken);
+                
+                console.log('User lookup result:', user ? 'Found' : 'Not found');
+                console.log('User data found:', user);
+                
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({ 
+                        success: true, 
+                        user: user
+                    })
+                };
+            } catch (error) {
+                console.error('Error in user lookup:', error);
+                // Fall back to mock user if real lookup fails
+            }
+        }
+        
+        // Fallback: return mock user
+        console.log('Using fallback mock user');
         const mockUser = {
             telegramId: parseInt(telegramId),
-            class: "7А",
-            lastName: "dfg", 
-            firstName: "dfg",
+            class: "5Б",
+            lastName: "ор", 
+            firstName: "орор",
             registrationDate: new Date().toISOString().split('T')[0]
         };
         
         console.log('Mock user created:', JSON.stringify(mockUser));
         
-        const response = {
+        return {
             statusCode: 200,
             headers,
             body: JSON.stringify({ 
@@ -65,13 +90,10 @@ exports.handler = async (event, context) => {
                 debug: {
                     hasOauthToken: !!oauthToken,
                     telegramIdReceived: telegramId,
-                    mockUserCreated: true
+                    mode: 'fallback_mock'
                 }
             })
         };
-        
-        console.log('Response being returned:', JSON.stringify(response));
-        return response;
 
     } catch (error) {
         console.error('Error in check-user:', error);
