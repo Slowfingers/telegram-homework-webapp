@@ -6,7 +6,7 @@ let archivedAssignments = [];
 let selectedFile = null;
 let isInitialized = false; // Prevent multiple initializations
 
-const API_BASE_URL = 'https://telegram-homework-webapp.netlify.app/.netlify/functions';
+const API_BASE_URL = 'https://evrikaforhome.netlify.app/.netlify/functions';
 
 // Debug functions
 function updateDebugInfo() {
