@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { readExcelFromYandexDisk, parseCSV, downloadCsv } = require('./excel-utils');
+const { readExcelFromYandexDisk, parseCSV, downloadCsv, getUser } = require('./excel-utils');
 
 // Telegram Bot Token (set in Netlify environment variables)
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -65,54 +65,34 @@ exports.handler = async (event, context) => {
             telegramIdType: typeof telegramId
         });
 
-        // Try new CSV approach with Yandex Disk
+        // Try Papa.parse CSV approach with Yandex Disk
         if (oauthToken) {
-            console.log('Using new CSV approach with OAuth token');
+            console.log('Using Papa.parse CSV approach with OAuth token');
             
             try {
-                const filePath = "/Homework_App/Records/Students.csv";
-                const content = await downloadCsv(filePath, oauthToken);
+                const user = await getUser(telegramId, oauthToken);
                 
-                if (content) {
-                    const rows = content.trim().split("\n");
-                    if (rows.length > 1) { // has header + data
-                        const headers = rows[0].split(",");
-                        
-                        for (let i = 1; i < rows.length; i++) {
-                            const row = rows[i].split(",");
-                            if (row[0] === String(telegramId)) {
-                                const user = {
-                                    telegramId: row[0],
-                                    class: row[1],
-                                    lastName: row[2],
-                                    firstName: row[3],
-                                    registrationDate: row[4]
-                                };
-                                
-                                console.log('User found with new CSV approach:', user);
-                                
-                                return {
-                                    statusCode: 200,
-                                    headers,
-                                    body: JSON.stringify({
-                                        success: true,
-                                        user: user,
-                                        debug: {
-                                            method: 'new_csv_approach',
-                                            filePath: filePath,
-                                            totalRows: rows.length - 1
-                                        }
-                                    })
-                                };
+                if (user) {
+                    console.log('User found with Papa.parse approach:', user);
+                    
+                    return {
+                        statusCode: 200,
+                        headers,
+                        body: JSON.stringify({
+                            success: true,
+                            user: user,
+                            debug: {
+                                method: 'papa_parse_csv',
+                                telegramId: telegramId
                             }
-                        }
-                    }
+                        })
+                    };
+                } else {
+                    console.log('User not found with Papa.parse approach');
                 }
                 
-                console.log('User not found with new CSV approach');
-                
             } catch (error) {
-                console.log('New CSV approach failed:', error.message);
+                console.log('Papa.parse CSV approach failed:', error.message);
             }
         }
         

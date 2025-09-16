@@ -1,5 +1,6 @@
 // Утилиты для работы с Excel файлами на Yandex Disk
 const https = require('https');
+const Papa = require('papaparse');
 
 // Функция для чтения Excel файла с Yandex Disk
 async function readExcelFromYandexDisk(filePath, oauthToken) {
@@ -393,53 +394,92 @@ async function uploadCsv(filePath, csvContent, oauthToken) {
     });
 }
 
-// Register student using the improved CSV approach
+// Register student using Papa.parse for proper CSV handling
 async function registerStudent(student, oauthToken) {
     const filePath = "/Homework_App/Records/Students.csv";
     
-    console.log('Registering student:', student);
+    console.log('Registering student with Papa.parse:', student);
     
     try {
         // 1. Download existing CSV content
-        let content = await downloadCsv(filePath, oauthToken);
+        let csvContent = await downloadCsv(filePath, oauthToken);
         
         // 2. If empty, create with header
-        if (!content) {
-            content = "telegramId,class,lastName,firstName,registrationDate\n";
+        if (!csvContent) {
+            csvContent = "telegramId,class,lastName,firstName,registrationDate\n";
         }
         
-        // 3. Parse rows
-        let rows = content.trim().split("\n");
-        let headers = rows.shift(); // first row
-        let exists = false;
+        console.log('Downloaded CSV content length:', csvContent.length);
+        console.log('CSV preview:', csvContent.substring(0, 200));
         
-        rows = rows.map(r => {
-            if (!r.trim()) return r; // skip empty rows
-            
-            let [tid, cl, ln, fn, date] = r.split(",");
-            if (tid === String(student.telegramId)) {
-                exists = true;
-                return `${student.telegramId},${student.class},${student.lastName},${student.firstName},${student.registrationDate}`;
-            }
-            return r;
-        });
+        // 3. Parse with Papa.parse
+        let parsed = Papa.parse(csvContent, { header: true });
+        let users = parsed.data.filter(u => u.telegramId && u.telegramId.trim());
         
-        if (!exists) {
-            rows.push(`${student.telegramId},${student.class},${student.lastName},${student.firstName},${student.registrationDate}`);
+        console.log('Parsed users count:', users.length);
+        console.log('Existing users:', users);
+        
+        // 4. Check if user exists by telegramId
+        const idx = users.findIndex(u => u.telegramId === String(student.telegramId));
+        if (idx >= 0) {
+            console.log('Updating existing user at index:', idx);
+            users[idx] = student;
+        } else {
+            console.log('Adding new user');
+            users.push(student);
         }
         
-        // 4. Build new CSV
-        let newCsv = headers + "\n" + rows.filter(r => r.trim()).join("\n");
+        console.log('Final users array:', users);
         
-        // 5. Upload to Yandex Disk
+        // 5. Generate new CSV with Papa.unparse
+        const newCsv = Papa.unparse(users);
+        
+        console.log('Generated CSV length:', newCsv.length);
+        console.log('Generated CSV preview:', newCsv.substring(0, 200));
+        
+        // 6. Upload to Yandex Disk
         await uploadCsv(filePath, newCsv, oauthToken);
         
-        console.log('Student registered successfully');
-        return true;
+        console.log('Student registered successfully with Papa.parse');
+        return student;
         
     } catch (error) {
         console.error('Student registration error:', error);
         throw error;
+    }
+}
+
+// Get user by telegramId using Papa.parse
+async function getUser(telegramId, oauthToken) {
+    const filePath = "/Homework_App/Records/Students.csv";
+    
+    console.log('Getting user with Papa.parse, telegramId:', telegramId);
+    
+    try {
+        let csvContent = await downloadCsv(filePath, oauthToken);
+        
+        if (!csvContent) {
+            console.log('No CSV content found');
+            return null;
+        }
+        
+        console.log('Downloaded CSV for user lookup, length:', csvContent.length);
+        
+        let parsed = Papa.parse(csvContent, { header: true });
+        let users = parsed.data.filter(u => u.telegramId && u.telegramId.trim());
+        
+        console.log('Parsed users for lookup:', users.length);
+        console.log('Looking for telegramId:', String(telegramId));
+        
+        const user = users.find(u => u.telegramId === String(telegramId));
+        
+        console.log('Found user:', user);
+        
+        return user || null;
+        
+    } catch (error) {
+        console.error('Get user error:', error);
+        return null;
     }
 }
 
@@ -451,5 +491,6 @@ module.exports = {
     parseCSV,
     downloadCsv,
     uploadCsv,
-    registerStudent
+    registerStudent,
+    getUser
 };

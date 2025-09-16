@@ -1,4 +1,4 @@
-const { registerStudent, downloadCsv } = require('./excel-utils');
+const { registerStudent, downloadCsv, getUser } = require('./excel-utils');
 
 exports.handler = async (event, context) => {
     const headers = {
@@ -42,28 +42,9 @@ exports.handler = async (event, context) => {
         console.log('CSV content length:', content ? content.length : 0);
         console.log('CSV content preview:', content ? content.substring(0, 200) : 'Empty');
         
-        // Step 3: Parse and find our student
-        let foundStudent = null;
-        if (content) {
-            const rows = content.trim().split("\n");
-            console.log('Total rows:', rows.length);
-            
-            if (rows.length > 1) {
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i].split(",");
-                    if (row[0] === String(testStudent.telegramId)) {
-                        foundStudent = {
-                            telegramId: row[0],
-                            class: row[1],
-                            lastName: row[2],
-                            firstName: row[3],
-                            registrationDate: row[4]
-                        };
-                        break;
-                    }
-                }
-            }
-        }
+        // Step 3: Use getUser function to find our student
+        console.log('Step 3: Using getUser function to find student...');
+        const foundStudent = await getUser(testStudent.telegramId, oauthToken);
         
         console.log('Found student:', foundStudent);
         
