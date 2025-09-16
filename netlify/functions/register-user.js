@@ -41,6 +41,39 @@ exports.handler = async (event, context) => {
             hasOauthToken: !!oauthToken
         });
         
+        // Try simple storage first (temporary solution)
+        try {
+            console.log('Trying simple storage registration...');
+            const simpleStorageResponse = await fetch(`${process.env.URL || 'https://evrikaforhome.netlify.app'}/.netlify/functions/simple-storage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'register', userData: userData })
+            });
+            
+            if (simpleStorageResponse.ok) {
+                const simpleData = await simpleStorageResponse.json();
+                console.log('Simple storage registration response:', simpleData);
+                
+                if (simpleData.success) {
+                    return {
+                        statusCode: 200,
+                        headers,
+                        body: JSON.stringify({
+                            success: true,
+                            message: 'User registered successfully (simple storage)',
+                            user: simpleData.user,
+                            debug: {
+                                method: 'simple_storage',
+                                totalUsers: simpleData.totalUsers
+                            }
+                        })
+                    };
+                }
+            }
+        } catch (error) {
+            console.log('Simple storage registration failed:', error.message);
+        }
+
         // If no environment variables, use hardcoded token and alternative save method
         if (!botToken || !oauthToken) {
             console.log('Working in demo mode - using alternative save method');
