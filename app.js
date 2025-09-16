@@ -80,18 +80,20 @@ function updateDebugPanel() {
 
 function toggleDebugPanel() {
     const debugPanel = document.getElementById('debug-panel');
-    const debugToggle = document.getElementById('debug-toggle');
-    
     if (debugPanel) {
         debugPanelVisible = !debugPanelVisible;
-        if (debugPanelVisible) {
-            debugPanel.classList.remove('hidden');
-            debugToggle.textContent = '';
-        } else {
-            debugPanel.classList.add('hidden');
-            debugToggle.textContent = '';
-        }
+        debugPanel.classList.toggle('hidden', !debugPanelVisible);
     }
+}
+
+// Clear all debug logs and user data
+function clearAppData() {
+    debugLog('Clearing all app data...');
+    currentUser = null;
+    debugLogs = [];
+    updateDebugInfo();
+    updateDebugPanel();
+    debugLog('App data cleared');
 }
 
 // Initialize the app
@@ -118,32 +120,35 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeApp() {
     debugLog('Initializing app...');
     
+    // Clear any previous app state
+    clearAppData();
+    
     // Check if running in local development
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     debugLog('Environment:', isLocal ? 'Local development' : 'Production');
     
-    if (isLocal) {
-        debugLog('Local development mode detected');
+    // Initialize Telegram WebApp
+    if (window.Telegram && window.Telegram.WebApp) {
+        tg = window.Telegram.WebApp;
+        tg.ready();
         
-        // Create mock Telegram object for local testing
-        window.Telegram = window.Telegram || {};
-        window.Telegram.WebApp = {
+        debugLog('Telegram WebApp initialized');
+        debugLog('Telegram user data:', tg.initDataUnsafe?.user);
+        
+        // Set up the app
+        setupEventListeners();
+        checkUserRegistration();
+    } else {
+        console.error('Telegram WebApp not available');
+        debugLog('Telegram WebApp not available - running in mock mode');
+        
+        // Mock mode for testing
+        tg = {
             initDataUnsafe: {
-                user: {
-                    id: 123456789,
-                    first_name: 'Test',
-                    last_name: 'User'
-                }
+                user: { id: 123456789, first_name: 'Test', last_name: 'User' }
             },
-            initData: 'mock_init_data_for_testing',
-            expand: function() { debugLog('Mock: WebApp expanded'); },
-            MainButton: {
-                setText: function(text) { debugLog('Mock: MainButton text set to:', text); },
-                hide: function() { debugLog('Mock: MainButton hidden'); },
-                show: function() { debugLog('Mock: MainButton shown'); }
-            },
+            initData: 'mock_init_data',
             BackButton: {
-                hide: function() { debugLog('Mock: BackButton hidden'); },
                 show: function() { debugLog('Mock: BackButton shown'); }
             },
             showAlert: function(message, callback) { 
@@ -278,6 +283,10 @@ function setupEventListeners() {
 async function checkUserRegistration() {
     try {
         debugLog('Checking user registration...');
+        
+        // Clear any old user data from memory
+        currentUser = null;
+        updateDebugInfo();
         
         if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
             debugLog('Telegram data not available');
