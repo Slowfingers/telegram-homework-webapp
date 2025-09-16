@@ -56,6 +56,10 @@ function downloadFile(url) {
 // Функция для загрузки Excel файла на Yandex Disk
 async function uploadExcelToYandexDisk(filePath, fileBuffer, oauthToken) {
     return new Promise((resolve, reject) => {
+        console.log('Starting upload to Yandex Disk:', filePath);
+        console.log('File buffer size:', fileBuffer.length);
+        console.log('OAuth token length:', oauthToken ? oauthToken.length : 0);
+        
         // Сначала получаем ссылку для загрузки
         const options = {
             hostname: 'cloud-api.yandex.net',
@@ -72,21 +76,41 @@ async function uploadExcelToYandexDisk(filePath, fileBuffer, oauthToken) {
                 data += chunk;
             });
             res.on('end', () => {
+                console.log('Upload URL response status:', res.statusCode);
+                console.log('Upload URL response data:', data);
+                
+                if (res.statusCode !== 200) {
+                    reject(new Error(`Failed to get upload URL: ${res.statusCode} - ${data}`));
+                    return;
+                }
+                
                 try {
                     const response = JSON.parse(data);
                     if (response.href) {
+                        console.log('Got upload URL, uploading file...');
                         // Загружаем файл по полученной ссылке
-                        uploadFileToUrl(response.href, fileBuffer).then(resolve).catch(reject);
+                        uploadFileToUrl(response.href, fileBuffer).then(() => {
+                            console.log('File uploaded successfully');
+                            resolve();
+                        }).catch((error) => {
+                            console.error('File upload failed:', error);
+                            reject(error);
+                        });
                     } else {
+                        console.error('No href in response:', response);
                         reject(new Error('Не удалось получить ссылку для загрузки'));
                     }
                 } catch (error) {
+                    console.error('JSON parse error:', error);
                     reject(error);
                 }
             });
         });
 
-        req.on('error', reject);
+        req.on('error', (error) => {
+            console.error('Request error:', error);
+            reject(error);
+        });
         req.end();
     });
 }
@@ -94,13 +118,16 @@ async function uploadExcelToYandexDisk(filePath, fileBuffer, oauthToken) {
 // Функция для загрузки файла по прямой ссылке
 function uploadFileToUrl(url, fileBuffer) {
     return new Promise((resolve, reject) => {
+        console.log('Uploading to URL:', url);
+        console.log('Buffer size:', fileBuffer.length);
+        
         const urlObj = new URL(url);
         const options = {
             hostname: urlObj.hostname,
             path: urlObj.pathname + urlObj.search,
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Type': 'text/csv',
                 'Content-Length': fileBuffer.length
             }
         };
@@ -111,15 +138,21 @@ function uploadFileToUrl(url, fileBuffer) {
                 data += chunk;
             });
             res.on('end', () => {
+                console.log('Upload response status:', res.statusCode);
+                console.log('Upload response data:', data);
+                
                 if (res.statusCode >= 200 && res.statusCode < 300) {
                     resolve(data);
                 } else {
-                    reject(new Error(`Ошибка загрузки: ${res.statusCode}`));
+                    reject(new Error(`Ошибка загрузки: ${res.statusCode} - ${data}`));
                 }
             });
         });
 
-        req.on('error', reject);
+        req.on('error', (error) => {
+            console.error('Upload request error:', error);
+            reject(error);
+        });
         req.write(fileBuffer);
         req.end();
     });
