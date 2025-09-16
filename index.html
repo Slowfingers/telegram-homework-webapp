@@ -3,268 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Домашние задания</title>
+    <title>🎓 Домашка - WebApp</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            line-height: 1.6;
-            padding: 20px;
-        }
-        .container { max-width: 400px; margin: 0 auto; }
-        .screen { display: none; }
-        .screen.active { display: block; animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
-        .header p { color: var(--tg-theme-hint-color, #666); font-size: 14px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; }
-        .form-control {
-            width: 100%; padding: 12px 16px; border: 1px solid var(--tg-theme-hint-color, #ddd);
-            border-radius: 8px; font-size: 16px; background: var(--tg-theme-bg-color, #fff);
-        }
-        .btn {
-            width: 100%; padding: 14px; border: none; border-radius: 8px;
-            font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px;
-        }
-        .btn-primary {
-            background: var(--tg-theme-button-color, #0088cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-        }
-        .btn-secondary {
-            background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-            color: var(--tg-theme-text-color, #000);
-            border: 1px solid var(--tg-theme-hint-color, #ddd);
-        }
-        .user-card {
-            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
-            border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;
-        }
-        .user-avatar { font-size: 48px; margin-bottom: 12px; }
-        .user-name { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
-        .user-class { color: var(--tg-theme-hint-color, #666); font-size: 14px; }
-        .back-btn {
-            position: fixed; top: 20px; left: 20px; background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-            border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; z-index: 100;
-            display: flex; align-items: center; justify-content: center; font-size: 18px;
-        }
-        .assignment-card {
-            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
-            border-radius: 12px; padding: 16px; margin-bottom: 16px;
-            border-left: 4px solid var(--tg-theme-button-color, #0088cc);
-        }
-        .assignment-date { font-size: 12px; color: var(--tg-theme-hint-color, #666); margin-bottom: 8px; }
-        .assignment-topic { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-        .assignment-description { font-size: 14px; line-height: 1.5; }
-        .file-upload {
-            border: 2px dashed var(--tg-theme-hint-color, #ddd); border-radius: 8px; padding: 20px;
-            text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 16px;
-        }
-        .file-upload:hover {
-            border-color: var(--tg-theme-button-color, #0088cc);
-            background: rgba(0, 136, 204, 0.05);
-        }
-        .file-upload.has-file { border-color: #28a745; background: rgba(40, 167, 69, 0.05); }
-        .file-upload input { display: none; }
-        .admin-badge {
-            background: #ff6b6b; color: white; padding: 4px 8px; border-radius: 12px;
-            font-size: 12px; font-weight: 600; margin-left: 8px;
-        }
-        .submissions-list { max-height: 400px; overflow-y: auto; }
-        .submission-item {
-            background: var(--tg-theme-secondary-bg-color, #f8f9fa); border-radius: 8px;
-            padding: 12px; margin-bottom: 8px; font-size: 14px;
-        }
-        .submission-meta { color: var(--tg-theme-hint-color, #666); font-size: 12px; margin-top: 4px; }
-        .loading { text-align: center; padding: 40px; color: var(--tg-theme-hint-color, #666); }
-    </style>
+    <link rel="stylesheet" href="styles-new.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Registration Screen -->
-        <div id="registrationScreen" class="screen active">
-            <div class="header">
-                <h1>Регистрация</h1>
-                <p>Заполните данные для первого входа</p>
+    <div id="app">
+        <!-- Animated Background -->
+        <div class="bg-animation">
+            <div class="floating-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+                <div class="shape shape-4"></div>
+                <div class="shape shape-5"></div>
             </div>
-            
-            <form id="registrationForm">
-                <div class="form-group">
-                    <label for="userClass">Класс</label>
-                    <select id="userClass" class="form-control" required>
-                        <option value="">Выберите класс</option>
-                        <option value="5А">5А</option>
-                        <option value="5Б">5Б</option>
-                        <option value="6А">6А</option>
-                        <option value="6Б">6Б</option>
-                        <option value="7А">7А</option>
-                        <option value="7Б">7Б</option>
-                        <option value="8А">8А</option>
-                        <option value="8Б">8Б</option>
-                        <option value="9А">9А</option>
-                        <option value="9Б">9Б</option>
-                        <option value="10А">10А</option>
-                        <option value="10Б">10Б</option>
-                        <option value="11А">11А</option>
-                        <option value="11Б">11Б</option>
-                    </select>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loadingScreen" class="screen active">
+            <div class="loading-container">
+                <div class="logo-animation">
+                    <div class="logo-circle">
+                        <span class="logo-emoji">🎓</span>
+                    </div>
+                    <div class="loading-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+                <h2 class="loading-text">Загружаем твою домашку...</h2>
+            </div>
+        </div>
+
+        <!-- Registration Screen -->
+        <div id="registrationScreen" class="screen">
+            <div class="container">
+                <div class="welcome-header">
+                    <div class="welcome-icon">🚀</div>
+                    <h1 class="welcome-title">Добро пожаловать!</h1>
+                    <p class="welcome-subtitle">Давай знакомиться! Расскажи о себе</p>
                 </div>
                 
-                <div class="form-group">
-                    <label for="lastName">Фамилия</label>
-                    <input type="text" id="lastName" class="form-control" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="firstName">Имя</label>
-                    <input type="text" id="firstName" class="form-control" required>
-                </div>
-                
-                <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
-            </form>
+                <form id="registration-form" class="modern-form">
+                    <div class="form-group">
+                        <label for="class-select" class="form-label">
+                            <span class="label-icon">🏫</span>
+                            Твой класс
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="class-select" class="modern-select" required>
+                                <option value="">Выбери свой класс</option>
+                                <option value="5А">5А</option>
+                                <option value="5Б">5Б</option>
+                                <option value="6А">6А</option>
+                                <option value="6Б">6Б</option>
+                                <option value="7А">7А</option>
+                                <option value="7Б">7Б</option>
+                                <option value="8А">8А</option>
+                                <option value="8Б">8Б</option>
+                                <option value="9А">9А</option>
+                                <option value="9Б">9Б</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="last-name" class="form-label">
+                            <span class="label-icon">👤</span>
+                            Фамилия
+                        </label>
+                        <input type="text" id="last-name" class="modern-input" placeholder="Введи свою фамилию" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="first-name" class="form-label">
+                            <span class="label-icon">✨</span>
+                            Имя
+                        </label>
+                        <input type="text" id="first-name" class="modern-input" placeholder="Как тебя зовут?" required>
+                    </div>
+                    
+                    <button type="submit" class="btn-modern btn-primary">
+                        <span class="btn-text">Поехали! 🎉</span>
+                        <div class="btn-ripple"></div>
+                    </button>
+                </form>
+            </div>
         </div>
 
         <!-- Main Menu Screen -->
         <div id="mainScreen" class="screen">
-            <div id="userInfo" class="user-card">
-                <div class="user-avatar">👤</div>
-                <div class="user-name" id="userName">Пользователь</div>
-                <div class="user-class" id="userClassDisplay">Класс не указан</div>
-            </div>
-            
-            <button class="btn btn-primary" onclick="showScreen('assignmentsScreen')">
-                📋 Посмотреть задания
-            </button>
-            
-            <button class="btn btn-primary" onclick="showScreen('submissionScreen')">
-                📤 Отправить домашку
-            </button>
-            
-            <button id="adminBtn" class="btn btn-secondary" onclick="showScreen('adminScreen')" style="display: none;">
-                👨‍🏫 Панель учителя
-            </button>
-        </div>
-
-        <!-- Assignments Screen -->
-        <div id="assignmentsScreen" class="screen">
-            <button class="back-btn" onclick="showScreen('mainScreen')">←</button>
-            
-            <div class="header">
-                <h1>Домашние задания</h1>
-                <p>Актуальные задания для вашего класса</p>
-            </div>
-            
-            <div id="assignmentsList">
-                <div class="loading">Загрузка заданий...</div>
-            </div>
-        </div>
-
-        <!-- Submission Screen -->
-        <div id="submissionScreen" class="screen">
-            <button class="back-btn" onclick="showScreen('mainScreen')">←</button>
-            
-            <div class="header">
-                <h1>Отправить домашку</h1>
-                <p>Выберите файл для отправки</p>
-            </div>
-            
-            <form id="submissionForm">
-                <div class="form-group">
-                    <label for="assignmentTopic">Тема задания</label>
-                    <input type="text" id="assignmentTopic" class="form-control" required 
-                           placeholder="Например: Алгоритмы сортировки">
-                </div>
-                
-                <div class="file-upload" onclick="document.getElementById('fileInput').click()">
-                    <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt,.py,.js,.html,.css">
-                    <div id="fileUploadText">
-                        📎 Нажмите для выбора файла<br>
-                        <small>PDF, DOC, TXT, код и другие</small>
+            <div class="container">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <span class="avatar-emoji">🎯</span>
+                    </div>
+                    <div class="profile-info">
+                        <h2 class="profile-name">Привет, <span id="user-name"></span>! 👋</h2>
+                        <p class="profile-class">Класс: <span id="user-class"></span></p>
                     </div>
                 </div>
                 
-                <button type="submit" class="btn btn-primary">Отправить</button>
-            </form>
-        </div>
-
-        <!-- Admin Screen -->
-        <div id="adminScreen" class="screen">
-            <button class="back-btn" onclick="showScreen('mainScreen')">←</button>
-            
-            <div class="header">
-                <h1>Панель учителя <span class="admin-badge">ADMIN</span></h1>
-                <p>Управление заданиями и просмотр сдач</p>
-            </div>
-            
-            <button class="btn btn-primary" onclick="showAdminSection('addAssignment')">
-                ➕ Добавить задание
-            </button>
-            
-            <button class="btn btn-secondary" onclick="showAdminSection('viewSubmissions')">
-                📊 Журнал сдач
-            </button>
-            
-            <!-- Add Assignment Section -->
-            <div id="addAssignmentSection" style="display: none; margin-top: 24px;">
-                <h3>Новое задание</h3>
-                <form id="addAssignmentForm">
-                    <div class="form-group">
-                        <label for="assignmentClassAdmin">Класс</label>
-                        <select id="assignmentClassAdmin" class="form-control" required>
-                            <option value="">Выберите класс</option>
-                            <option value="5А">5А</option>
-                            <option value="5Б">5Б</option>
-                            <option value="6А">6А</option>
-                            <option value="6Б">6Б</option>
-                            <option value="7А">7А</option>
-                            <option value="7Б">7Б</option>
-                            <option value="8А">8А</option>
-                            <option value="8Б">8Б</option>
-                            <option value="9А">9А</option>
-                            <option value="9Б">9Б</option>
-                            <option value="10А">10А</option>
-                            <option value="10Б">10Б</option>
-                            <option value="11А">11А</option>
-                            <option value="11Б">11Б</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="assignmentTopicAdmin">Тема</label>
-                        <input type="text" id="assignmentTopicAdmin" class="form-control" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="assignmentDescription">Описание</label>
-                        <textarea id="assignmentDescription" class="form-control" rows="4" required></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="assignmentDeadline">Срок сдачи</label>
-                        <input type="date" id="assignmentDeadline" class="form-control" required>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">Добавить задание</button>
-                </form>
-            </div>
-            
-            <!-- View Submissions Section -->
-            <div id="viewSubmissionsSection" style="display: none; margin-top: 24px;">
-                <h3>Журнал сдач</h3>
-                <div id="submissionsList" class="submissions-list">
-                    <div class="loading">Загрузка журнала...</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="app-clean.js"></script>
-</body>
-</html>
+                <div class="menu-grid">
+                    <button id="check-homework-btn" class="menu-card card-blue">
+                        <div class="card-icon">📚</div>
+                        <div class="card-content">
+                            <h3>Узнать домашку</h3>
+                            <p>Посмотри что задали</p>
                         </div>
                         <div class="card-arrow">→</div>
                     </button>
@@ -518,6 +369,6 @@
 
     </div>
 
-    <script src="app-clean.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
