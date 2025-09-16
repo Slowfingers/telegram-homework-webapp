@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { uploadExcelToYandexDisk, createStudentsExcel, registerStudent } = require('./excel-utils');
+const { registerStudentJson } = require('./json-utils');
 
 // Telegram Bot Token (set in Netlify environment variables)
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -55,8 +56,8 @@ exports.handler = async (event, context) => {
                     registrationDate: new Date().toISOString().split('T')[0]
                 };
                 
-                // Use new registerStudent function
-                await registerStudent(student, oauthToken);
+                // Use JSON approach for user registration on Yandex Disk
+                const result = await registerStudentJson(student, oauthToken);
                 
                 return {
                     statusCode: 200,

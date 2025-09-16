@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { readExcelFromYandexDisk, parseCSV, downloadCsv, getUser } = require('./excel-utils');
+const { getUserJson } = require('./json-utils');
 
 // Telegram Bot Token (set in Netlify environment variables)
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -70,7 +71,7 @@ exports.handler = async (event, context) => {
             console.log('Using Papa.parse CSV approach with OAuth token');
             
             try {
-                const user = await getUser(telegramId, oauthToken);
+                const user = await getUserJson(telegramId, oauthToken);
                 
                 if (user) {
                     console.log('User found with Papa.parse approach:', user);
