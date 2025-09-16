@@ -2,6 +2,39 @@
 const https = require('https');
 const Papa = require('papaparse');
 
+// Helper function to download with redirect handling
+function downloadWithRedirects(url, callback, maxRedirects = 5) {
+    if (maxRedirects <= 0) {
+        callback(new Error('Too many redirects'));
+        return;
+    }
+    
+    console.log('Downloading from URL:', url);
+    
+    https.get(url, (res) => {
+        console.log('Response status:', res.statusCode);
+        console.log('Response headers:', JSON.stringify(res.headers, null, 2));
+        
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+            console.log('Following redirect to:', res.headers.location);
+            downloadWithRedirects(res.headers.location, callback, maxRedirects - 1);
+            return;
+        }
+        
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+            let data = '';
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => {
+                console.log('Final download successful, content length:', data.length);
+                callback(null, data);
+            });
+        } else {
+            callback(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
+        }
+    }).on('error', callback);
+}
+
 // Функция для чтения Excel файла с Yandex Disk
 async function readExcelFromYandexDisk(filePath, oauthToken) {
     return new Promise((resolve, reject) => {
@@ -295,27 +328,16 @@ async function downloadCsv(filePath, oauthToken) {
                     
                     if (response.href) {
                         console.log('Downloading file content from href...');
-                        // Download actual file content
-                        https.get(response.href, (fileRes) => {
-                            let fileData = '';
-                            fileRes.setEncoding('utf8'); // Ensure UTF-8 encoding
-                            fileRes.on('data', (chunk) => fileData += chunk);
-                            fileRes.on('end', () => {
-                                console.log('File download status:', fileRes.statusCode);
+                        // Download actual file content with redirect handling
+                        downloadWithRedirects(response.href, (error, fileData) => {
+                            if (error) {
+                                console.error('File download error:', error);
+                                resolve('');
+                            } else {
                                 console.log('Downloaded bytes:', Buffer.byteLength(fileData, 'utf8'));
                                 console.log('Downloaded content preview:', fileData.substring(0, 100));
-                                
-                                // Check if download was successful
-                                if (fileRes.statusCode >= 200 && fileRes.statusCode < 300) {
-                                    resolve(fileData);
-                                } else {
-                                    console.error('File download failed with status:', fileRes.statusCode);
-                                    resolve('');
-                                }
-                            });
-                        }).on('error', (error) => {
-                            console.error('File download error:', error);
-                            resolve('');
+                                resolve(fileData);
+                            }
                         });
                     } else {
                         console.log('No download href in response');
