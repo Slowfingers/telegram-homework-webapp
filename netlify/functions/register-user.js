@@ -67,7 +67,7 @@ exports.handler = async (event, context) => {
                         user: userData,
                         debug: {
                             method: 'new_csv_approach',
-                            filePath: '/Homework_App/Records/Students.csv'
+                            filePath: "/Homework_App/Students.csv"
                         }
                     })
                 };

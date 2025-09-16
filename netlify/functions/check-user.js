@@ -146,8 +146,9 @@ exports.handler = async (event, context) => {
                             success: true,
                             user: user,
                             debug: {
-                                method: 'yandex_disk',
-                                hasOauthToken: true,
+                                method: 'csv_lookup',
+                                filePath: "/Homework_App/Students.csv",
+                                asOauthToken: true,
                                 telegramId: telegramId
                             }
                         })
@@ -249,12 +250,13 @@ function validateTelegramData(initData) {
 // Check if user exists in Excel file on Yandex Disk
 async function checkUserInExcel(telegramId, oauthToken) {
     try {
-        const studentsFilePath = '/Homework_App/Students.csv';
+        // Поиск пользователя в /Homework_App/Students.csv
+        const filePath = "/Homework_App/Students.csv";
         
         console.log('Checking user in Excel file:', telegramId);
         
         // Try to read existing file
-        const existingData = await readExcelFromYandexDisk(studentsFilePath, oauthToken);
+        const existingData = await readExcelFromYandexDisk(filePath, oauthToken);
         console.log('File read successfully, size:', existingData.length);
         
         const students = parseCSV(existingData);
