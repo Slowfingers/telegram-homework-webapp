@@ -127,12 +127,20 @@ function uploadFileToUrl(url, fileBuffer) {
 
 // Функция для создания простого Excel файла (CSV формат для совместимости)
 function createStudentsExcel(students) {
-    const headers = 'ID,Telegram ID,Класс,Фамилия,Имя,Дата регистрации\n';
-    const rows = students.map((student, index) => 
-        `${index + 1},${student.telegramId},"${student.class}","${student.lastName}","${student.firstName}","${student.registrationDate || new Date().toISOString().split('T')[0]}"`
-    ).join('\n');
+    console.log('Creating CSV for students:', students.length);
+    console.log('Students data:', students);
     
-    return Buffer.from(headers + rows, 'utf-8');
+    const headers = 'ID,Telegram ID,Класс,Фамилия,Имя,Дата регистрации\n';
+    const rows = students.map((student, index) => {
+        const row = `${index + 1},${student.telegramId},"${student.class}","${student.lastName}","${student.firstName}","${student.registrationDate || new Date().toISOString().split('T')[0]}"`;
+        console.log('Creating row:', row);
+        return row;
+    }).join('\n');
+    
+    const csvContent = headers + rows;
+    console.log('Final CSV content:', csvContent);
+    
+    return Buffer.from(csvContent, 'utf-8');
 }
 
 // Функция для создания Excel файла отслеживания домашек

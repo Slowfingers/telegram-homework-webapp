@@ -122,22 +122,29 @@ async function saveUserToExcel(userData, oauthToken) {
         // Try to read existing file
         console.log('Reading existing students file...');
         const existingData = await readExcelFromYandexDisk(studentsFilePath, oauthToken);
-        students = parseCSV(existingData);
-        console.log('Existing students found:', students.length);
-        console.log('Existing students data:', students.map(s => ({ 
-            id: s['Telegram ID'] || s['telegramId'], 
-            name: s['Фамилия'] || s['lastName'],
-            class: s['Класс'] || s['class']
-        })));
         
-        // Check if user already exists
-        const existingUser = students.find(s => 
-            s['Telegram ID'] === userData.telegramId.toString() ||
-            s['telegramId'] === userData.telegramId.toString()
-        );
-        if (existingUser) {
-            console.log('User already registered:', userData.telegramId);
-            return;
+        // Check if file is empty
+        if (existingData && existingData.length > 0) {
+            students = parseCSV(existingData);
+            console.log('Existing students found:', students.length);
+            console.log('Existing students data:', students.map(s => ({ 
+                id: s['Telegram ID'] || s['telegramId'], 
+                name: s['Фамилия'] || s['lastName'],
+                class: s['Класс'] || s['class']
+            })));
+            
+            // Check if user already exists
+            const existingUser = students.find(s => 
+                s['Telegram ID'] === userData.telegramId.toString() ||
+                s['telegramId'] === userData.telegramId.toString()
+            );
+            if (existingUser) {
+                console.log('User already registered:', userData.telegramId);
+                return;
+            }
+        } else {
+            console.log('File is empty, starting with empty array');
+            students = [];
         }
     } catch (error) {
         console.log('File read error (creating new file):', error.message);
