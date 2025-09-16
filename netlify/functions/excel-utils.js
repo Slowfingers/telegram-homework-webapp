@@ -80,6 +80,58 @@ function uploadExcelToYandexDisk(filePath, fileBuffer, oauthToken) {
     });
 }
 
+// Функция для получения ссылки для загрузки файла
+function getUploadUrl(filePath, oauthToken, overwrite = false) {
+    return new Promise((resolve, reject) => {
+        const encodedPath = encodeURIComponent(filePath);
+        const url = `https://cloud-api.yandex.net/v1/disk/resources/upload?path=${encodedPath}&overwrite=${overwrite}`;
+        
+        console.log('Getting upload URL for:', filePath);
+        console.log('Encoded path:', encodedPath);
+        console.log('Full URL:', url);
+        
+        const options = {
+            hostname: 'cloud-api.yandex.net',
+            path: `/v1/disk/resources/upload?path=${encodedPath}&overwrite=${overwrite}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `OAuth ${oauthToken}`
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                console.log('Upload URL response status:', res.statusCode);
+                console.log('Upload URL response data:', data);
+                
+                try {
+                    const response = JSON.parse(data);
+                    if (response.href) {
+                        console.log('Successfully got upload URL:', response.href);
+                        resolve(response.href);
+                    } else {
+                        console.error('No href in response:', response);
+                        reject(new Error(`Не удалось получить ссылку для загрузки: ${JSON.stringify(response)}`));
+                    }
+                } catch (error) {
+                    console.error('Failed to parse upload URL response:', error);
+                    reject(error);
+                }
+            });
+        });
+
+        req.on('error', (error) => {
+            console.error('Request error getting upload URL:', error);
+            reject(error);
+        });
+        req.end();
+    });
+}
+
 // Функция для загрузки файла по прямой ссылке
 function uploadFileToUrl(url, fileBuffer) {
     return new Promise((resolve, reject) => {
