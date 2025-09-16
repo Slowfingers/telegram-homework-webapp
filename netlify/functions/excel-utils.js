@@ -54,30 +54,29 @@ function downloadFile(url) {
 }
 
 // Функция для загрузки Excel файла на Yandex Disk
-async function uploadExcelToYandexDisk(filePath, fileBuffer, oauthToken) {
+function uploadExcelToYandexDisk(filePath, fileBuffer, oauthToken) {
     return new Promise((resolve, reject) => {
+        console.log('Starting upload to Yandex Disk:', filePath);
+        console.log('File buffer size:', fileBuffer.length);
+        console.log('OAuth token length:', oauthToken ? oauthToken.length : 'no token');
+        
         // Сначала получаем ссылку для загрузки
-        const options = {
-            hostname: 'cloud-api.yandex.net',
-            path: `/v1/disk/resources/upload?path=${encodeURIComponent(filePath)}&overwrite=true`,
-            method: 'GET',
-            headers: {
-                'Authorization': `OAuth ${oauthToken}`
-            }
-        };
-
-        const req = https.request(options, (res) => {
-            let data = '';
-            res.on('data', (chunk) => {
-                data += chunk;
+        getUploadUrl(filePath, oauthToken, true) // overwrite = true
+            .then(uploadUrl => {
+                console.log('Got upload URL:', uploadUrl);
+                return uploadFileToUrl(uploadUrl, fileBuffer);
+            })
+            .then(result => {
+                console.log('File uploaded successfully to:', filePath);
+                console.log('Upload result:', result);
+                resolve(result);
+            })
+            .catch(error => {
+                console.error('Upload error for file:', filePath);
+                console.error('Error details:', error.message);
+                console.error('Error stack:', error.stack);
+                reject(error);
             });
-            res.on('end', () => {
-                try {
-                    const response = JSON.parse(data);
-                    if (response.href) {
-                        // Загружаем файл по полученной ссылке
-                        uploadFileToUrl(response.href, fileBuffer).then(resolve).catch(reject);
-                    } else {
                         reject(new Error('Не удалось получить ссылку для загрузки'));
                     }
                 } catch (error) {
@@ -94,16 +93,21 @@ async function uploadExcelToYandexDisk(filePath, fileBuffer, oauthToken) {
 // Функция для загрузки файла по прямой ссылке
 function uploadFileToUrl(url, fileBuffer) {
     return new Promise((resolve, reject) => {
+        console.log('Uploading file to URL:', url);
+        console.log('File buffer size:', fileBuffer.length);
+        
         const urlObj = new URL(url);
         const options = {
             hostname: urlObj.hostname,
             path: urlObj.pathname + urlObj.search,
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Type': 'text/csv',
                 'Content-Length': fileBuffer.length
             }
         };
+
+        console.log('Upload options:', options);
 
         const req = https.request(options, (res) => {
             let data = '';
@@ -111,15 +115,24 @@ function uploadFileToUrl(url, fileBuffer) {
                 data += chunk;
             });
             res.on('end', () => {
+                console.log('Upload response status:', res.statusCode);
+                console.log('Upload response data:', data);
+                
                 if (res.statusCode >= 200 && res.statusCode < 300) {
+                    console.log('File upload successful');
                     resolve(data);
                 } else {
-                    reject(new Error(`Ошибка загрузки: ${res.statusCode}`));
+                    console.error('Upload failed with status:', res.statusCode);
+                    reject(new Error(`Ошибка загрузки: ${res.statusCode} - ${data}`));
                 }
             });
         });
 
-        req.on('error', reject);
+        req.on('error', (error) => {
+            console.error('Upload request error:', error);
+            reject(error);
+        });
+        
         req.write(fileBuffer);
         req.end();
     });
