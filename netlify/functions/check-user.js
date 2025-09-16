@@ -65,37 +65,7 @@ exports.handler = async (event, context) => {
             telegramIdType: typeof telegramId
         });
 
-        // Try simple storage first (temporary solution)
-        try {
-            console.log('Trying simple storage lookup...');
-            const simpleStorageResponse = await fetch(`${process.env.URL || 'https://evrikaforhome.netlify.app'}/.netlify/functions/simple-storage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'check', telegramId: telegramId })
-            });
-            
-            if (simpleStorageResponse.ok) {
-                const simpleData = await simpleStorageResponse.json();
-                console.log('Simple storage response:', simpleData);
-                
-                if (simpleData.success && simpleData.user) {
-                    return {
-                        statusCode: 200,
-                        headers,
-                        body: JSON.stringify({
-                            success: true,
-                            user: simpleData.user,
-                            debug: {
-                                method: 'simple_storage',
-                                totalUsers: simpleData.totalUsers
-                            }
-                        })
-                    };
-                }
-            }
-        } catch (error) {
-            console.log('Simple storage lookup failed:', error.message);
-        }
+        // Skip simple storage to avoid recursion
 
         // Now that we have environment variables, try real user lookup first
         if (oauthToken) {

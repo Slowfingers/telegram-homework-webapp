@@ -288,16 +288,16 @@ async function checkUserRegistration() {
         const telegramId = tg.initDataUnsafe.user.id;
         debugLog('User ID:', telegramId);
         
-        // Try backend first, fallback to mock mode if it fails
+        // Try simple storage first
         try {
-            const response = await fetch(`${API_BASE_URL}/check-user`, {
+            const response = await fetch(`${API_BASE_URL}/simple-storage`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    telegramId: telegramId,
-                    initData: tg.initData
+                    action: 'check',
+                    telegramId: telegramId
                 })
             });
             
@@ -307,7 +307,7 @@ async function checkUserRegistration() {
             if (data.success && data.user) {
                 // User is registered
                 currentUser = data.user;
-                console.log('User found from backend:', currentUser);
+                console.log('User found from simple storage:', currentUser);
                 updateDebugInfo();
                 showMainMenu();
             } else {
