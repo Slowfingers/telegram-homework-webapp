@@ -41,7 +41,7 @@ exports.handler = async (event, context) => {
 
         console.log('Registering test user:', testUser);
 
-        const studentsFilePath = '/Домашки/Students.csv';
+        const studentsFilePath = '/Homework_App/Students.csv';
         let students = [];
         
         try {

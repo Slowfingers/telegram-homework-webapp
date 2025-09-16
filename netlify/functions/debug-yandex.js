@@ -30,13 +30,13 @@ exports.handler = async (event, context) => {
         }
 
         // Test 1: Check if folder exists
-        console.log('Step 1: Checking if /Домашки folder exists...');
-        const folderCheck = await checkFolder('/Домашки', oauthToken);
+        console.log('Step 1: Checking if /Homework_App folder exists...');
+        const folderCheck = await checkFolder('/Homework_App', oauthToken);
         console.log('Folder check result:', folderCheck);
 
         // Test 2: Try to get upload URL
         console.log('Step 2: Getting upload URL for CSV file...');
-        const uploadUrl = await getUploadUrl('/Домашки/Students.csv', oauthToken);
+        const uploadUrl = await getUploadUrl('/Homework_App/Students.csv', oauthToken);
         console.log('Upload URL result:', uploadUrl);
 
         // Test 3: Try to upload simple CSV content
@@ -48,7 +48,7 @@ exports.handler = async (event, context) => {
 
             // Test 4: Try to read back the file
             console.log('Step 4: Reading back the uploaded file...');
-            const readResult = await readFile('/Домашки/Students.csv', oauthToken);
+            const readResult = await readFile('/Homework_App/Students.csv', oauthToken);
             console.log('Read result:', readResult);
 
             return {

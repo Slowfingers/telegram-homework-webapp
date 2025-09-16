@@ -31,7 +31,7 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const studentsFilePath = '/Домашки/Students.csv';
+        const studentsFilePath = '/Homework_App/Students.csv';
         
         try {
             console.log('Attempting to read CSV file:', studentsFilePath);

@@ -218,7 +218,7 @@ function validateTelegramData(initData) {
 // Check if user exists in Excel file on Yandex Disk
 async function checkUserInExcel(telegramId, oauthToken) {
     try {
-        const studentsFilePath = '/Домашки/Students.csv';
+        const studentsFilePath = '/Homework_App/Students.csv';
         
         console.log('Checking user in Excel file:', telegramId);
         

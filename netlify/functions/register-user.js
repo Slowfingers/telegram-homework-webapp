@@ -146,7 +146,7 @@ exports.handler = async (event, context) => {
 
 // Save user to Excel file on Yandex Disk
 async function saveUserToExcel(userData, oauthToken) {
-    const studentsFilePath = '/Домашки/Students.csv';
+    const studentsFilePath = '/Homework_App/Students.csv';
     let students = [];
     
     console.log('Attempting to save user to Excel:', userData.telegramId);
@@ -205,7 +205,7 @@ async function saveUserToExcel(userData, oauthToken) {
 // Alternative save method - saves each user to individual file
 async function saveUserAlternative(userData, oauthToken) {
     const timestamp = Date.now();
-    const userFilePath = `/Домашки/Users/user_${userData.telegramId}_${timestamp}.json`;
+    const homeworkPath = `/Homework_App/${userData.class}_homework_tracking.csv`;
     
     console.log('Alternative save: Creating individual file for user:', userData.telegramId);
     

@@ -70,6 +70,7 @@ exports.handler = async (event, context) => {
         };
 
     } catch (error) {
+        const homeworkDir = '/Homework_App/Homework_Submissions';
         console.error('Homework submission error:', error);
         return {
             statusCode: 500,
@@ -87,7 +88,7 @@ async function uploadHomeworkFile(fileData, submissionData, oauthToken) {
         
         // Create file path in class folder
         const sanitizedTopic = assignmentTopic.replace(/[^a-zA-Zа-яА-Я0-9\s]/g, '').substring(0, 50);
-        const filePath = `/Домашки/${studentClass}/${assignmentDate}_${sanitizedTopic}/${lastName}_${firstName}_${fileName}`;
+        const filePath = `/Homework_App/Homework_Submissions/${studentClass}/${assignmentDate}_${sanitizedTopic}/${lastName}_${firstName}_${fileName}`;
         
         // Convert base64 to buffer
         const fileBuffer = Buffer.from(fileContent, 'base64');
@@ -211,7 +212,8 @@ function uploadToUrl(url, fileBuffer) {
 // Update homework tracking Excel file
 async function updateHomeworkTracking(submissionData, oauthToken) {
     try {
-        const trackingFilePath = '/Домашки/Homework_Tracking.csv';
+        const { class: userClass } = submissionData;
+        const trackingFilePath = `/Homework_App/${userClass}_homework_tracking.csv`;
         let trackingData = [];
         
         try {
