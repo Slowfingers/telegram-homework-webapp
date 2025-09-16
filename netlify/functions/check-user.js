@@ -9,6 +9,12 @@ const YANDEX_OAUTH_TOKEN = process.env.YANDEX_OAUTH_TOKEN;
 const SPREADSHEET_ID = process.env.YANDEX_SPREADSHEET_ID;
 
 exports.handler = async (event, context) => {
+    console.log('=== CHECK-USER FUNCTION STARTED ===');
+    console.log('Event:', JSON.stringify(event, null, 2));
+    console.log('HTTP Method:', event.httpMethod);
+    console.log('Headers:', JSON.stringify(event.headers, null, 2));
+    console.log('Body:', event.body);
+    
     // Enable CORS
     const headers = {
         'Access-Control-Allow-Origin': '*',
@@ -17,10 +23,12 @@ exports.handler = async (event, context) => {
     };
 
     if (event.httpMethod === 'OPTIONS') {
+        console.log('Handling OPTIONS request');
         return { statusCode: 200, headers, body: '' };
     }
 
     if (event.httpMethod !== 'POST') {
+        console.log('Invalid method:', event.httpMethod);
         return {
             statusCode: 405,
             headers,
@@ -29,8 +37,20 @@ exports.handler = async (event, context) => {
     }
 
     try {
+        console.log('Parsing request body...');
+        
+        if (!event.body) {
+            console.error('No body in request');
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ success: false, message: 'No request body' })
+            };
+        }
+        
         const { telegramId, initData } = JSON.parse(event.body);
 
+        console.log('Successfully parsed body');
         console.log('Checking user registration for ID:', telegramId);
         console.log('telegramId type:', typeof telegramId);
         console.log('telegramId value:', telegramId);
@@ -96,11 +116,24 @@ exports.handler = async (event, context) => {
         };
 
     } catch (error) {
-        console.error('Error in check-user:', error);
+        console.error('=== ERROR IN CHECK-USER ===');
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('Event body:', event.body);
+        
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ success: false, message: 'Internal server error' })
+            body: JSON.stringify({ 
+                success: false, 
+                message: 'Internal server error',
+                error: error.message,
+                debug: {
+                    hasBody: !!event.body,
+                    bodyLength: event.body ? event.body.length : 0,
+                    method: event.httpMethod
+                }
+            })
         };
     }
 };
