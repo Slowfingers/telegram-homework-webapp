@@ -304,7 +304,14 @@ async function downloadCsv(filePath, oauthToken) {
                                 console.log('File download status:', fileRes.statusCode);
                                 console.log('Downloaded bytes:', Buffer.byteLength(fileData, 'utf8'));
                                 console.log('Downloaded content preview:', fileData.substring(0, 100));
-                                resolve(fileData);
+                                
+                                // Check if download was successful
+                                if (fileRes.statusCode >= 200 && fileRes.statusCode < 300) {
+                                    resolve(fileData);
+                                } else {
+                                    console.error('File download failed with status:', fileRes.statusCode);
+                                    resolve('');
+                                }
                             });
                         }).on('error', (error) => {
                             console.error('File download error:', error);
