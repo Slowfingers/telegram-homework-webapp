@@ -176,6 +176,9 @@ async function saveUserToExcel(userData, oauthToken) {
     console.log('User saved to Excel successfully:', userData.telegramId);
 }
 
+// Export the function for testing
+module.exports = { saveUserToExcel };
+
 // Alternative save method - saves each user to individual file
 async function saveUserAlternative(userData, oauthToken) {
     const timestamp = Date.now();
