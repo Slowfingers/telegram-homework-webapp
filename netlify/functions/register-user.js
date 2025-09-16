@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { readExcelFromYandexDisk, uploadExcelToYandexDisk, createStudentsExcel, parseCSV } = require('./excel-utils');
+const { uploadExcelToYandexDisk, createStudentsExcel, registerStudent } = require('./excel-utils');
 
 // Telegram Bot Token (set in Netlify environment variables)
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -41,6 +41,76 @@ exports.handler = async (event, context) => {
             hasOauthToken: !!oauthToken
         });
         
+        // Try new CSV approach with Yandex Disk
+        if (oauthToken) {
+            console.log('Using new CSV approach with OAuth token');
+            
+            try {
+                // Prepare student data
+                const student = {
+                    telegramId: userData.telegramId,
+                    class: userData.class,
+                    lastName: userData.lastName,
+                    firstName: userData.firstName,
+                    registrationDate: new Date().toISOString().split('T')[0]
+                };
+                
+                // Use new registerStudent function
+                await registerStudent(student, oauthToken);
+                
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({
+                        success: true,
+                        message: 'User registered successfully with new CSV approach',
+                        user: userData,
+                        debug: {
+                            method: 'new_csv_approach',
+                            filePath: '/Homework_App/Records/Students.csv'
+                        }
+                    })
+                };
+                
+            } catch (error) {
+                console.log('New CSV approach failed:', error.message);
+                // Fall back to simple storage
+            }
+        }
+        
+        // Fallback to simple storage
+        try {
+            console.log('Falling back to simple storage...');
+            const simpleStorageResponse = await fetch(`${process.env.URL || 'https://evrikaforhome.netlify.app'}/.netlify/functions/simple-storage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'register', userData: userData })
+            });
+            
+            if (simpleStorageResponse.ok) {
+                const simpleData = await simpleStorageResponse.json();
+                console.log('Simple storage registration response:', simpleData);
+                
+                if (simpleData.success) {
+                    return {
+                        statusCode: 200,
+                        headers,
+                        body: JSON.stringify({
+                            success: true,
+                            message: 'User registered successfully (fallback storage)',
+                            user: simpleData.user,
+                            debug: {
+                                method: 'simple_storage_fallback',
+                                totalUsers: simpleData.totalUsers
+                            }
+                        })
+                    };
+                }
+            }
+        } catch (error) {
+            console.log('Simple storage fallback failed:', error.message);
+        }
+
         // Skip simple storage to avoid recursion
 
         // If no environment variables, use hardcoded token and alternative save method

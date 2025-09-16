@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { readExcelFromYandexDisk, parseCSV } = require('./excel-utils');
+const { readExcelFromYandexDisk, parseCSV, downloadCsv } = require('./excel-utils');
 
 // Telegram Bot Token (set in Netlify environment variables)
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -65,7 +65,88 @@ exports.handler = async (event, context) => {
             telegramIdType: typeof telegramId
         });
 
-        // Skip simple storage to avoid recursion
+        // Try new CSV approach with Yandex Disk
+        if (oauthToken) {
+            console.log('Using new CSV approach with OAuth token');
+            
+            try {
+                const filePath = "/Homework_App/Records/Students.csv";
+                const content = await downloadCsv(filePath, oauthToken);
+                
+                if (content) {
+                    const rows = content.trim().split("\n");
+                    if (rows.length > 1) { // has header + data
+                        const headers = rows[0].split(",");
+                        
+                        for (let i = 1; i < rows.length; i++) {
+                            const row = rows[i].split(",");
+                            if (row[0] === String(telegramId)) {
+                                const user = {
+                                    telegramId: row[0],
+                                    class: row[1],
+                                    lastName: row[2],
+                                    firstName: row[3],
+                                    registrationDate: row[4]
+                                };
+                                
+                                console.log('User found with new CSV approach:', user);
+                                
+                                return {
+                                    statusCode: 200,
+                                    headers,
+                                    body: JSON.stringify({
+                                        success: true,
+                                        user: user,
+                                        debug: {
+                                            method: 'new_csv_approach',
+                                            filePath: filePath,
+                                            totalRows: rows.length - 1
+                                        }
+                                    })
+                                };
+                            }
+                        }
+                    }
+                }
+                
+                console.log('User not found with new CSV approach');
+                
+            } catch (error) {
+                console.log('New CSV approach failed:', error.message);
+            }
+        }
+        
+        // Fallback to simple storage
+        try {
+            console.log('Falling back to simple storage...');
+            const simpleStorageResponse = await fetch(`${process.env.URL || 'https://evrikaforhome.netlify.app'}/.netlify/functions/simple-storage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'check', telegramId: telegramId })
+            });
+            
+            if (simpleStorageResponse.ok) {
+                const simpleData = await simpleStorageResponse.json();
+                console.log('Simple storage response:', simpleData);
+                
+                if (simpleData.success && simpleData.user) {
+                    return {
+                        statusCode: 200,
+                        headers,
+                        body: JSON.stringify({
+                            success: true,
+                            user: simpleData.user,
+                            debug: {
+                                method: 'simple_storage_fallback',
+                                totalUsers: simpleData.totalUsers
+                            }
+                        })
+                    };
+                }
+            }
+        } catch (error) {
+            console.log('Simple storage fallback failed:', error.message);
+        }
 
         // Now that we have environment variables, try real user lookup first
         if (oauthToken) {

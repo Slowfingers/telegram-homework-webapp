@@ -251,10 +251,205 @@ function parseCSVLine(line) {
     return result;
 }
 
+// Download CSV content from Yandex Disk
+async function downloadCsv(filePath, oauthToken) {
+    return new Promise((resolve, reject) => {
+        console.log('Downloading CSV from:', filePath);
+        
+        const options = {
+            hostname: 'cloud-api.yandex.net',
+            path: `/v1/disk/resources/download?path=${encodeURIComponent(filePath)}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `OAuth ${oauthToken}`
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => {
+                console.log('Download URL response status:', res.statusCode);
+                
+                if (res.statusCode === 404) {
+                    console.log('File not found, returning empty content');
+                    resolve('');
+                    return;
+                }
+                
+                if (res.statusCode !== 200) {
+                    console.log('Download URL error:', data);
+                    resolve('');
+                    return;
+                }
+                
+                try {
+                    const response = JSON.parse(data);
+                    if (response.href) {
+                        // Download actual file content
+                        https.get(response.href, (fileRes) => {
+                            let fileData = '';
+                            fileRes.on('data', (chunk) => fileData += chunk);
+                            fileRes.on('end', () => {
+                                console.log('File downloaded successfully, size:', fileData.length);
+                                resolve(fileData);
+                            });
+                        }).on('error', (error) => {
+                            console.error('File download error:', error);
+                            resolve('');
+                        });
+                    } else {
+                        console.log('No download href in response');
+                        resolve('');
+                    }
+                } catch (error) {
+                    console.error('JSON parse error:', error);
+                    resolve('');
+                }
+            });
+        });
+
+        req.on('error', (error) => {
+            console.error('Download request error:', error);
+            resolve('');
+        });
+        req.end();
+    });
+}
+
+// Upload CSV content to Yandex Disk
+async function uploadCsv(filePath, csvContent, oauthToken) {
+    return new Promise((resolve, reject) => {
+        console.log('Uploading CSV to:', filePath);
+        console.log('CSV content length:', csvContent.length);
+        
+        // First get upload URL
+        const options = {
+            hostname: 'cloud-api.yandex.net',
+            path: `/v1/disk/resources/upload?path=${encodeURIComponent(filePath)}&overwrite=true`,
+            method: 'GET',
+            headers: {
+                'Authorization': `OAuth ${oauthToken}`
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => {
+                console.log('Upload URL response status:', res.statusCode);
+                
+                if (res.statusCode !== 200) {
+                    console.error('Failed to get upload URL:', data);
+                    reject(new Error(`Upload URL error: ${res.statusCode}`));
+                    return;
+                }
+                
+                try {
+                    const response = JSON.parse(data);
+                    if (response.href) {
+                        // Upload file content
+                        const urlObj = new URL(response.href);
+                        const buffer = Buffer.from(csvContent, 'utf8');
+                        
+                        const uploadOptions = {
+                            hostname: urlObj.hostname,
+                            path: urlObj.pathname + urlObj.search,
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'text/csv',
+                                'Content-Length': buffer.length
+                            }
+                        };
+
+                        const uploadReq = https.request(uploadOptions, (uploadRes) => {
+                            let uploadData = '';
+                            uploadRes.on('data', (chunk) => uploadData += chunk);
+                            uploadRes.on('end', () => {
+                                console.log('Upload response status:', uploadRes.statusCode);
+                                if (uploadRes.statusCode >= 200 && uploadRes.statusCode < 300) {
+                                    console.log('CSV uploaded successfully');
+                                    resolve();
+                                } else {
+                                    reject(new Error(`Upload failed: ${uploadRes.statusCode}`));
+                                }
+                            });
+                        });
+
+                        uploadReq.on('error', reject);
+                        uploadReq.write(buffer);
+                        uploadReq.end();
+                    } else {
+                        reject(new Error('No upload href in response'));
+                    }
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        });
+
+        req.on('error', reject);
+        req.end();
+    });
+}
+
+// Register student using the improved CSV approach
+async function registerStudent(student, oauthToken) {
+    const filePath = "/Homework_App/Records/Students.csv";
+    
+    console.log('Registering student:', student);
+    
+    try {
+        // 1. Download existing CSV content
+        let content = await downloadCsv(filePath, oauthToken);
+        
+        // 2. If empty, create with header
+        if (!content) {
+            content = "telegramId,class,lastName,firstName,registrationDate\n";
+        }
+        
+        // 3. Parse rows
+        let rows = content.trim().split("\n");
+        let headers = rows.shift(); // first row
+        let exists = false;
+        
+        rows = rows.map(r => {
+            if (!r.trim()) return r; // skip empty rows
+            
+            let [tid, cl, ln, fn, date] = r.split(",");
+            if (tid === String(student.telegramId)) {
+                exists = true;
+                return `${student.telegramId},${student.class},${student.lastName},${student.firstName},${student.registrationDate}`;
+            }
+            return r;
+        });
+        
+        if (!exists) {
+            rows.push(`${student.telegramId},${student.class},${student.lastName},${student.firstName},${student.registrationDate}`);
+        }
+        
+        // 4. Build new CSV
+        let newCsv = headers + "\n" + rows.filter(r => r.trim()).join("\n");
+        
+        // 5. Upload to Yandex Disk
+        await uploadCsv(filePath, newCsv, oauthToken);
+        
+        console.log('Student registered successfully');
+        return true;
+        
+    } catch (error) {
+        console.error('Student registration error:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     readExcelFromYandexDisk,
     uploadExcelToYandexDisk,
     createStudentsExcel,
     createHomeworkTrackingExcel,
-    parseCSV
+    parseCSV,
+    downloadCsv,
+    uploadCsv,
+    registerStudent
 };

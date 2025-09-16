@@ -361,14 +361,13 @@ async function handleRegistration(e) {
         
         // Try backend first, fallback to mock mode if it fails
         try {
-            const response = await fetch(`${API_BASE_URL}/register-user`, {
+            const response = await fetch(`${API_BASE_URL}/simple-storage`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    telegramId: userData.telegramId,
-                    initData: tg.initData,
+                    action: 'register',
                     userData: userData
                 })
             });
