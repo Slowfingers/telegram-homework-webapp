@@ -77,16 +77,6 @@ function uploadExcelToYandexDisk(filePath, fileBuffer, oauthToken) {
                 console.error('Error stack:', error.stack);
                 reject(error);
             });
-                        reject(new Error('Не удалось получить ссылку для загрузки'));
-                    }
-                } catch (error) {
-                    reject(error);
-                }
-            });
-        });
-
-        req.on('error', reject);
-        req.end();
     });
 }
 
