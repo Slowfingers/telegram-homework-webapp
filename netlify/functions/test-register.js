@@ -47,6 +47,7 @@ exports.handler = async (event, context) => {
         
         // Try to call the actual register function logic
         const { saveUserToExcel } = require('./register-user');
+        const { readExcelFromYandexDisk, uploadExcelToYandexDisk, parseCSV, createStudentsExcel } = require('./excel-utils');
         
         try {
             await saveUserToExcel(testUserData, oauthToken);
