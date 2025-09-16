@@ -234,5 +234,7 @@ module.exports = {
     uploadExcelToYandexDisk,
     createStudentsExcel,
     createHomeworkTrackingExcel,
-    parseCSV
+    parseCSV,
+    getUploadUrl,
+    uploadFileToUrl
 };
