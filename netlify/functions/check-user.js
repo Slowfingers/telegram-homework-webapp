@@ -1,5 +1,4 @@
 const crypto = require('crypto');
-const { readExcelFromYandexDisk, parseCSV, downloadCsv, getUser } = require('./excel-utils');
 const { getUserJson } = require('./json-utils');
 
 // Telegram Bot Token (set in Netlify environment variables)
@@ -66,15 +65,15 @@ exports.handler = async (event, context) => {
             telegramIdType: typeof telegramId
         });
 
-        // Try Papa.parse CSV approach with Yandex Disk
+        // Use JSON approach with Yandex Disk
         if (oauthToken) {
-            console.log('Using Papa.parse CSV approach with OAuth token');
+            console.log('Using JSON approach with OAuth token');
             
             try {
                 const user = await getUserJson(telegramId, oauthToken);
                 
                 if (user) {
-                    console.log('User found with Papa.parse approach:', user);
+                    console.log('User found with JSON approach:', user);
                     
                     return {
                         statusCode: 200,
@@ -83,17 +82,17 @@ exports.handler = async (event, context) => {
                             success: true,
                             user: user,
                             debug: {
-                                method: 'papa_parse_csv',
+                                method: 'json_approach',
                                 telegramId: telegramId
                             }
                         })
                     };
                 } else {
-                    console.log('User not found with Papa.parse approach');
+                    console.log('User not found with JSON approach');
                 }
                 
             } catch (error) {
-                console.log('Papa.parse CSV approach failed:', error.message);
+                console.error('JSON approach failed:', error.message);
             }
         }
         

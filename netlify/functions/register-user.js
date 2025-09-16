@@ -1,5 +1,4 @@
 const crypto = require('crypto');
-const { uploadExcelToYandexDisk, createStudentsExcel, registerStudent } = require('./excel-utils');
 const { registerStudentJson } = require('./json-utils');
 
 // Telegram Bot Token (set in Netlify environment variables)
@@ -42,9 +41,9 @@ exports.handler = async (event, context) => {
             hasOauthToken: !!oauthToken
         });
         
-        // Try new CSV approach with Yandex Disk
+        // Use JSON approach with Yandex Disk
         if (oauthToken) {
-            console.log('Using new CSV approach with OAuth token');
+            console.log('Using JSON approach with OAuth token');
             
             try {
                 // Prepare student data
@@ -64,11 +63,11 @@ exports.handler = async (event, context) => {
                     headers,
                     body: JSON.stringify({
                         success: true,
-                        message: 'User registered successfully with new CSV approach',
+                        message: 'User registered successfully with JSON approach',
                         user: userData,
                         debug: {
-                            method: 'new_csv_approach',
-                            filePath: '/Homework_App/Records/Students.csv'
+                            method: 'json_approach',
+                            filePath: '/Homework_App/Records/Students.json'
                         }
                     })
                 };
