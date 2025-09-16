@@ -4,9 +4,9 @@ let currentUser = null;
 let currentAssignments = [];
 let archivedAssignments = [];
 let selectedFile = null;
-let isInitialized = false; // Prevent multiple initializations
-
+let isInitialized = false; // Telegram WebApp для домашних заданий
 const API_BASE_URL = 'https://evrikaforhome.netlify.app/.netlify/functions';
+const ADMIN_ID = 606360710;
 
 // Debug functions
 function updateDebugInfo() {
@@ -277,127 +277,87 @@ function setupEventListeners() {
 // Check if user is already registered
 async function checkUserRegistration() {
     try {
-        debugLog('Checking user registration...');
-        
-        if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
-            debugLog('Telegram data not available');
-            showError('Ошибка инициализации Telegram');
+        const telegramId = tg.initDataUnsafe?.user?.id;
+        if (!telegramId) {
+            showError('Ошибка получения данных Telegram');
             return;
         }
-        
-        const telegramId = tg.initDataUnsafe.user.id;
-        debugLog('User ID:', telegramId);
-        
-        // Use persistent backend check-user (Yandex Disk CSV)
-        try {
-            const response = await fetch(`${API_BASE_URL}/check-user`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    telegramId: telegramId,
-                    initData: tg.initData
-                })
-            });
-            
-            const data = await response.json();
-            updateDebugApiResponse(data);
-            
-            if (data.success && data.user) {
-                // User is registered
-                currentUser = data.user;
-                console.log('User found from backend:', currentUser);
-                updateDebugInfo();
-                showScreen('main');
-            } else {
-                // User needs to register
-                console.log('User not found, showing registration');
-                showScreen('registration');
-            }
-        } catch (error) {
-            // Fallback to mock mode if backend is not available
-            console.log('Backend not available, using mock mode for user check:', error);
-            console.log('Mock: Checking user registration for ID:', telegramId);
-            updateDebugApiResponse({ error: error.message, mode: 'mock' });
-            
-            // Show registration screen immediately without recursion
-            console.log('Mock: User not found, showing registration');
-            showScreen('registration');
+
+        console.log('Checking registration for user:', telegramId);
+
+        const response = await fetch(`${API_BASE_URL}/check-user-new`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                telegramId: telegramId,
+                initData: tg.initData
+            })
+        });
+
+        const data = await response.json();
+        console.log('Check user response:', data);
+
+        if (data.success && data.user) {
+            currentUser = data.user;
+            showScreen('mainScreen');
+            updateUserInfo();
+        } else {
+            showScreen('registrationScreen');
         }
     } catch (error) {
-        debugLog('Error checking user registration:', error);
-        showError('Ошибка подключения к серверу');
+        console.error('Error checking user:', error);
+        showScreen('registrationScreen');
     }
 }
 
 // Handle registration form submission
-async function handleRegistration(e) {
-    e.preventDefault();
+async function handleRegistration(event) {
+    event.preventDefault();
     
+    const userClass = document.getElementById('userClass').value;
+    const lastName = document.getElementById('lastName').value.trim();
+    const firstName = document.getElementById('firstName').value.trim();
+    
+    if (!userClass || !lastName || !firstName) {
+        showMessage('Заполните все поля', 'error');
+        return;
+    }
+
+    const telegramId = tg.initDataUnsafe?.user?.id;
+    const userData = {
+        telegramId,
+        class: userClass,
+        lastName,
+        firstName,
+        registrationDate: new Date().toISOString().split('T')[0]
+    };
+
     try {
-        debugLog('Handling registration...');
+        const response = await fetch(`${API_BASE_URL}/register-user-new`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                telegramId,
+                initData: tg.initData,
+                userData
+            })
+        });
+
+        const data = await response.json();
         
-        const classSelect = document.getElementById('class-select');
-        const lastName = document.getElementById('last-name');
-        const firstName = document.getElementById('first-name');
-        
-        if (!classSelect || !lastName || !firstName) {
-            showModal('error', 'Форма регистрации не найдена');
-            return;
-        }
-        
-        const userData = {
-            telegramId: tg.initDataUnsafe.user.id,
-            class: classSelect.value,
-            lastName: lastName.value.trim(),
-            firstName: firstName.value.trim()
-        };
-        
-        if (!userData.class || !userData.lastName || !userData.firstName) {
-            showModal('error', 'Пожалуйста, заполните все поля');
-            return;
-        }
-        
-        // Use persistent backend register-user (Yandex Disk CSV)
-        try {
-            const response = await fetch(`${API_BASE_URL}/register-user`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    telegramId: telegramId,
-                    initData: tg.initData,
-                    userData: userData
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                currentUser = userData;
-                showModal('success', 'Регистрация прошла успешно!');
-                setTimeout(() => {
-                    showScreen('main');
-                }, 2000);
-            } else {
-                showModal('error', data.message || 'Ошибка регистрации');
-            }
-        } catch (error) {
-            // Fallback to mock mode if backend is not available
-            debugLog('Backend not available, using mock mode:', error);
-            debugLog('Mock: Registering user:', userData);
-            
+        if (data.success) {
             currentUser = userData;
-            showModal('success', 'Регистрация прошла успешно! (демо режим)');
+            showMessage('Регистрация успешна!', 'success');
             setTimeout(() => {
-                showScreen('main');
-            }, 2000);
+                showScreen('mainScreen');
+                updateUserInfo();
+            }, 1500);
+        } else {
+            showMessage(data.message || 'Ошибка регистрации', 'error');
         }
     } catch (error) {
-        debugLog('Registration error:', error);
-        showModal('error', 'Ошибка при регистрации');
+        console.error('Registration error:', error);
+        showMessage('Ошибка подключения к серверу', 'error');
     }
 }
 

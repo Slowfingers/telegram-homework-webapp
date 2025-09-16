@@ -486,9 +486,8 @@ async function verifyFileUpload(filePath, oauthToken) {
     });
 }
 
-// Register student using Papa.parse for proper CSV handling
-async function registerStudent(student, oauthToken) {
-    const filePath = "/Homework_App/Records/Students.csv";
+// Register student using Papa.parse for// Функция для регистрации студента
+async function registerStudent(student, oauthToken, filePath = "/Homework_App/Students.csv") {
     
     console.log('Registering student with Papa.parse:', student);
     
