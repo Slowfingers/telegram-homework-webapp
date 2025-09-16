@@ -54,45 +54,12 @@ function downloadFile(url) {
 }
 
 // Функция для загрузки Excel файла на Yandex Disk
-function uploadExcelToYandexDisk(filePath, fileBuffer, oauthToken) {
+async function uploadExcelToYandexDisk(filePath, fileBuffer, oauthToken) {
     return new Promise((resolve, reject) => {
-        console.log('Starting upload to Yandex Disk:', filePath);
-        console.log('File buffer size:', fileBuffer.length);
-        console.log('OAuth token length:', oauthToken ? oauthToken.length : 'no token');
-        
         // Сначала получаем ссылку для загрузки
-        getUploadUrl(filePath, oauthToken, true) // overwrite = true
-            .then(uploadUrl => {
-                console.log('Got upload URL:', uploadUrl);
-                return uploadFileToUrl(uploadUrl, fileBuffer);
-            })
-            .then(result => {
-                console.log('File uploaded successfully to:', filePath);
-                console.log('Upload result:', result);
-                resolve(result);
-            })
-            .catch(error => {
-                console.error('Upload error for file:', filePath);
-                console.error('Error details:', error.message);
-                console.error('Error stack:', error.stack);
-                reject(error);
-            });
-    });
-}
-
-// Функция для получения ссылки для загрузки файла
-function getUploadUrl(filePath, oauthToken, overwrite = false) {
-    return new Promise((resolve, reject) => {
-        const encodedPath = encodeURIComponent(filePath);
-        const url = `https://cloud-api.yandex.net/v1/disk/resources/upload?path=${encodedPath}&overwrite=${overwrite}`;
-        
-        console.log('Getting upload URL for:', filePath);
-        console.log('Encoded path:', encodedPath);
-        console.log('Full URL:', url);
-        
         const options = {
             hostname: 'cloud-api.yandex.net',
-            path: `/v1/disk/resources/upload?path=${encodedPath}&overwrite=${overwrite}`,
+            path: `/v1/disk/resources/upload?path=${encodeURIComponent(filePath)}&overwrite=true`,
             method: 'GET',
             headers: {
                 'Authorization': `OAuth ${oauthToken}`
@@ -105,29 +72,21 @@ function getUploadUrl(filePath, oauthToken, overwrite = false) {
                 data += chunk;
             });
             res.on('end', () => {
-                console.log('Upload URL response status:', res.statusCode);
-                console.log('Upload URL response data:', data);
-                
                 try {
                     const response = JSON.parse(data);
                     if (response.href) {
-                        console.log('Successfully got upload URL:', response.href);
-                        resolve(response.href);
+                        // Загружаем файл по полученной ссылке
+                        uploadFileToUrl(response.href, fileBuffer).then(resolve).catch(reject);
                     } else {
-                        console.error('No href in response:', response);
-                        reject(new Error(`Не удалось получить ссылку для загрузки: ${JSON.stringify(response)}`));
+                        reject(new Error('Не удалось получить ссылку для загрузки'));
                     }
                 } catch (error) {
-                    console.error('Failed to parse upload URL response:', error);
                     reject(error);
                 }
             });
         });
 
-        req.on('error', (error) => {
-            console.error('Request error getting upload URL:', error);
-            reject(error);
-        });
+        req.on('error', reject);
         req.end();
     });
 }
@@ -135,21 +94,16 @@ function getUploadUrl(filePath, oauthToken, overwrite = false) {
 // Функция для загрузки файла по прямой ссылке
 function uploadFileToUrl(url, fileBuffer) {
     return new Promise((resolve, reject) => {
-        console.log('Uploading file to URL:', url);
-        console.log('File buffer size:', fileBuffer.length);
-        
         const urlObj = new URL(url);
         const options = {
             hostname: urlObj.hostname,
             path: urlObj.pathname + urlObj.search,
             method: 'PUT',
             headers: {
-                'Content-Type': 'text/csv',
+                'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'Content-Length': fileBuffer.length
             }
         };
-
-        console.log('Upload options:', options);
 
         const req = https.request(options, (res) => {
             let data = '';
@@ -157,24 +111,15 @@ function uploadFileToUrl(url, fileBuffer) {
                 data += chunk;
             });
             res.on('end', () => {
-                console.log('Upload response status:', res.statusCode);
-                console.log('Upload response data:', data);
-                
                 if (res.statusCode >= 200 && res.statusCode < 300) {
-                    console.log('File upload successful');
                     resolve(data);
                 } else {
-                    console.error('Upload failed with status:', res.statusCode);
-                    reject(new Error(`Ошибка загрузки: ${res.statusCode} - ${data}`));
+                    reject(new Error(`Ошибка загрузки: ${res.statusCode}`));
                 }
             });
         });
 
-        req.on('error', (error) => {
-            console.error('Upload request error:', error);
-            reject(error);
-        });
-        
+        req.on('error', reject);
         req.write(fileBuffer);
         req.end();
     });
@@ -182,20 +127,12 @@ function uploadFileToUrl(url, fileBuffer) {
 
 // Функция для создания простого Excel файла (CSV формат для совместимости)
 function createStudentsExcel(students) {
-    console.log('Creating CSV for students:', students.length);
-    console.log('Students data:', students);
-    
     const headers = 'ID,Telegram ID,Класс,Фамилия,Имя,Дата регистрации\n';
-    const rows = students.map((student, index) => {
-        const row = `${index + 1},${student.telegramId},"${student.class}","${student.lastName}","${student.firstName}","${student.registrationDate || new Date().toISOString().split('T')[0]}"`;
-        console.log('Creating row:', row);
-        return row;
-    }).join('\n');
+    const rows = students.map((student, index) => 
+        `${index + 1},${student.telegramId},"${student.class}","${student.lastName}","${student.firstName}","${student.registrationDate || new Date().toISOString().split('T')[0]}"`
+    ).join('\n');
     
-    const csvContent = headers + rows;
-    console.log('Final CSV content:', csvContent);
-    
-    return Buffer.from(csvContent, 'utf-8');
+    return Buffer.from(headers + rows, 'utf-8');
 }
 
 // Функция для создания Excel файла отслеживания домашек
@@ -286,7 +223,5 @@ module.exports = {
     uploadExcelToYandexDisk,
     createStudentsExcel,
     createHomeworkTrackingExcel,
-    parseCSV,
-    getUploadUrl,
-    uploadFileToUrl
+    parseCSV
 };
