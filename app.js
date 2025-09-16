@@ -288,16 +288,16 @@ async function checkUserRegistration() {
         const telegramId = tg.initDataUnsafe.user.id;
         debugLog('User ID:', telegramId);
         
-        // Try simple storage first
+        // Use persistent backend check-user (Yandex Disk CSV)
         try {
-            const response = await fetch(`${API_BASE_URL}/simple-storage`, {
+            const response = await fetch(`${API_BASE_URL}/check-user`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    action: 'check',
-                    telegramId: telegramId
+                    telegramId: telegramId,
+                    initData: tg.initData
                 })
             });
             
@@ -307,9 +307,9 @@ async function checkUserRegistration() {
             if (data.success && data.user) {
                 // User is registered
                 currentUser = data.user;
-                console.log('User found from simple storage:', currentUser);
+                console.log('User found from backend:', currentUser);
                 updateDebugInfo();
-                showMainMenu();
+                showScreen('main');
             } else {
                 // User needs to register
                 console.log('User not found, showing registration');
@@ -359,15 +359,16 @@ async function handleRegistration(e) {
             return;
         }
         
-        // Try backend first, fallback to mock mode if it fails
+        // Use persistent backend register-user (Yandex Disk CSV)
         try {
-            const response = await fetch(`${API_BASE_URL}/simple-storage`, {
+            const response = await fetch(`${API_BASE_URL}/register-user`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    action: 'register',
+                    telegramId: telegramId,
+                    initData: tg.initData,
                     userData: userData
                 })
             });
@@ -378,7 +379,7 @@ async function handleRegistration(e) {
                 currentUser = userData;
                 showModal('success', 'Регистрация прошла успешно!');
                 setTimeout(() => {
-                    showMainMenu();
+                    showScreen('main');
                 }, 2000);
             } else {
                 showModal('error', data.message || 'Ошибка регистрации');
@@ -391,7 +392,7 @@ async function handleRegistration(e) {
             currentUser = userData;
             showModal('success', 'Регистрация прошла успешно! (демо режим)');
             setTimeout(() => {
-                showMainMenu();
+                showScreen('main');
             }, 2000);
         }
     } catch (error) {
