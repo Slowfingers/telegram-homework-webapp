@@ -6,14 +6,9 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 // Yandex API credentials (set in Netlify environment variables)
 const YANDEX_OAUTH_TOKEN = process.env.YANDEX_OAUTH_TOKEN;
-const SPREADSHEET_ID = process.env.YANDEX_SPREADSHEET_ID;
 
 exports.handler = async (event, context) => {
-    console.log('=== CHECK-USER FUNCTION STARTED ===');
-    console.log('Event:', JSON.stringify(event, null, 2));
-    console.log('HTTP Method:', event.httpMethod);
-    console.log('Headers:', JSON.stringify(event.headers, null, 2));
-    console.log('Body:', event.body);
+    console.log('=== CHECK-USER START ===');
     
     // Enable CORS
     const headers = {
@@ -37,8 +32,6 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        console.log('Parsing request body...');
-        
         if (!event.body) {
             console.error('No body in request');
             return {
@@ -50,146 +43,49 @@ exports.handler = async (event, context) => {
         
         const { telegramId, initData } = JSON.parse(event.body);
 
-        console.log('Successfully parsed body');
-        console.log('Checking user registration for ID:', telegramId);
-        console.log('telegramId type:', typeof telegramId);
-        console.log('telegramId value:', telegramId);
-
         // Check environment variables
         const oauthToken = process.env.YANDEX_OAUTH_TOKEN;
-        
-        console.log('Environment check:', {
-            hasOauthToken: !!oauthToken,
-            oauthTokenLength: oauthToken ? oauthToken.length : 0,
-            telegramId: telegramId,
-            telegramIdType: typeof telegramId
-        });
 
         // Use JSON approach with Yandex Disk
         if (oauthToken) {
-            console.log('Using JSON approach with OAuth token');
-            
+            console.log('Using JSON storage');
             try {
                 const user = await getUserJson(telegramId, oauthToken);
                 
                 if (user) {
-                    console.log('User found with JSON approach:', user);
-                    
+                    console.log('User found');
                     return {
                         statusCode: 200,
                         headers,
                         body: JSON.stringify({
                             success: true,
                             user: user,
-                            debug: {
-                                method: 'json_approach',
-                                telegramId: telegramId
-                            }
+                            debug: { method: 'json_approach' }
                         })
                     };
                 } else {
-                    console.log('User not found with JSON approach');
-                }
-                
-            } catch (error) {
-                console.error('JSON approach failed:', error.message);
-            }
-        }
-        
-        // Fallback to simple storage
-        try {
-            console.log('Falling back to simple storage...');
-            const simpleStorageResponse = await fetch(`${process.env.URL || 'https://evrikaforhome.netlify.app'}/.netlify/functions/simple-storage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'check', telegramId: telegramId })
-            });
-            
-            if (simpleStorageResponse.ok) {
-                const simpleData = await simpleStorageResponse.json();
-                console.log('Simple storage response:', simpleData);
-                
-                if (simpleData.success && simpleData.user) {
+                    console.log('User not found');
                     return {
                         statusCode: 200,
                         headers,
-                        body: JSON.stringify({
-                            success: true,
-                            user: simpleData.user,
-                            debug: {
-                                method: 'simple_storage_fallback',
-                                totalUsers: simpleData.totalUsers
-                            }
-                        })
+                        body: JSON.stringify({ success: true, user: null, debug: { method: 'json_approach' } })
                     };
                 }
-            }
-        } catch (error) {
-            console.log('Simple storage fallback failed:', error.message);
-        }
-
-        // Now that we have environment variables, try real user lookup first
-        if (oauthToken) {
-            console.log('Using production mode with OAuth token');
-            
-            try {
-                const user = await checkUserInExcel(telegramId, oauthToken);
                 
-                console.log('User lookup result:', user ? 'Found' : 'Not found');
-                console.log('User data found:', user);
-                
-                if (user) {
-                    return {
-                        statusCode: 200,
-                        headers,
-                        body: JSON.stringify({
-                            success: true,
-                            user: user,
-                            debug: {
-                                method: 'yandex_disk',
-                                hasOauthToken: true,
-                                telegramId: telegramId
-                            }
-                        })
-                    };
-                }
             } catch (error) {
-                console.error('Yandex Disk user lookup failed:', error);
-                // Continue to fallback mode
+                console.error('JSON storage error:', error.message);
+                return {
+                    statusCode: 500,
+                    headers,
+                    body: JSON.stringify({ success: false, message: 'Lookup failed', error: error.message })
+                };
             }
         }
-        
-        // Fallback: return mock user
-        console.log('Using fallback mock user');
-        const mockUser = {
-            telegramId: parseInt(telegramId),
-            class: "5Б",
-            lastName: "ор", 
-            firstName: "орор",
-            registrationDate: new Date().toISOString().split('T')[0]
-        };
-        
-        console.log('Mock user created:', JSON.stringify(mockUser));
-        
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ 
-                success: true, 
-                user: mockUser,
-                debug: {
-                    hasOauthToken: !!oauthToken,
-                    telegramIdReceived: telegramId,
-                    mode: 'fallback_mock'
-                }
-            })
-        };
+        // No OAuth token configured
+        return { statusCode: 500, headers, body: JSON.stringify({ success: false, message: 'Server not configured' }) };
 
     } catch (error) {
-        console.error('=== ERROR IN CHECK-USER ===');
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        console.error('Event body:', event.body);
+        console.error('CHECK-USER error:', error.message);
         
         return {
             statusCode: 500,
@@ -197,12 +93,7 @@ exports.handler = async (event, context) => {
             body: JSON.stringify({ 
                 success: false, 
                 message: 'Internal server error',
-                error: error.message,
-                debug: {
-                    hasBody: !!event.body,
-                    bodyLength: event.body ? event.body.length : 0,
-                    method: event.httpMethod
-                }
+                error: error.message
             })
         };
     }

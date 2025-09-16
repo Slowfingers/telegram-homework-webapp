@@ -8,6 +8,9 @@ let isInitialized = false; // Prevent multiple initializations
 
 const API_BASE_URL = 'https://evrikaforhome.netlify.app/.netlify/functions';
 
+// Debug flag
+const DEBUG = false;
+
 // Debug functions
 function updateDebugInfo() {
     const debugCurrentUser = document.getElementById('debugCurrentUser');
@@ -49,6 +52,7 @@ let debugLogs = [];
 let debugPanelVisible = false;
 
 function debugLog(message, data = null) {
+    if (!DEBUG) return;
     const timestamp = new Date().toLocaleTimeString();
     const logEntry = `[${timestamp}] ${message}`;
     
@@ -69,6 +73,7 @@ function debugLog(message, data = null) {
 }
 
 function updateDebugPanel() {
+    if (!DEBUG) return;
     const debugLogsElement = document.getElementById('debug-logs');
     if (debugLogsElement) {
         debugLogsElement.innerHTML = debugLogs.map(log => 
@@ -79,6 +84,7 @@ function updateDebugPanel() {
 }
 
 function toggleDebugPanel() {
+    if (!DEBUG) return;
     const debugPanel = document.getElementById('debug-panel');
     if (debugPanel) {
         debugPanelVisible = !debugPanelVisible;
