@@ -1,6 +1,5 @@
 const crypto = require('crypto');
 const https = require('https');
-const { readExcelFromYandexDisk, uploadExcelToYandexDisk, parseCSV } = require('./excel-utils');
 
 exports.handler = async (event, context) => {
     // Set CORS headers

@@ -1,5 +1,6 @@
 const crypto = require('crypto');
-const { readExcelFromYandexDisk, uploadExcelToYandexDisk, createHomeworkTrackingExcel, parseCSV } = require('./excel-utils');
+
+// Removed excel-utils dependency - using JSON approach now
 
 // Telegram Bot Token (set in Netlify environment variables)
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
