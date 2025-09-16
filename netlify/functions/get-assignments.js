@@ -7,6 +7,7 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const YANDEX_OAUTH_TOKEN = process.env.YANDEX_OAUTH_TOKEN;
 
 exports.handler = async (event, context) => {
+    console.log('=== GET-ASSIGNMENTS FUNCTION CALLED ===');
     // Enable CORS
     const headers = {
         'Access-Control-Allow-Origin': '*',

@@ -108,7 +108,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     try {
         initializeApp();
-        setupEventListeners();
         isInitialized = true;
     } catch (error) {
         debugLog('Initialization error:', error);
@@ -159,27 +158,9 @@ function initializeApp() {
             onEvent: function(event, callback) { debugLog('Mock: Event listener added for:', event); }
         };
         
-        tg = window.Telegram.WebApp;
-    } else {
-        // Use real Telegram WebApp
-        tg = window.Telegram?.WebApp;
-        
-        if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
-            debugLog('Telegram data not available');
-            showError('Приложение должно запускаться из Telegram');
-            return;
-        }
+        setupEventListeners();
+        checkUserRegistration();
     }
-    
-    // Initialize Telegram WebApp features
-    tg.expand();
-    tg.MainButton.setText('Готово');
-    tg.MainButton.hide();
-    
-    debugLog('Telegram WebApp initialized, checking user registration...');
-    
-    // Check if user is registered
-    checkUserRegistration();
 }
 
 // Setup event listeners
@@ -705,6 +686,12 @@ async function handleAddAssignment(e) {
 function showScreen(screenName) {
     debugLog(`Switching to screen: ${screenName}`);
     
+    // Hide loading screen
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        loadingScreen.classList.remove('active');
+    }
+    
     // Hide all screens
     const screens = document.querySelectorAll('.screen');
     screens.forEach(screen => {
@@ -715,17 +702,10 @@ function showScreen(screenName) {
     const targetScreen = document.getElementById(`${screenName}Screen`);
     if (targetScreen) {
         targetScreen.classList.add('active');
-        currentScreen = screenName;
         
-        // Handle screen-specific logic
+        // Special handling for main screen
         if (screenName === 'main') {
             showMainMenu();
-        } else if (screenName === 'registration') {
-            // Show registration screen
-        } else if (screenName === 'assignments') {
-            // loadAssignments will be called from event listener
-        } else if (screenName === 'submission') {
-            // prefillSubmissionForm will be called from event listener
         }
     } else {
         debugLog(`Screen not found: ${screenName}Screen`);
