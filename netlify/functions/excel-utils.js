@@ -252,10 +252,12 @@ function parseCSVLine(line) {
     return result;
 }
 
-// Download CSV content from Yandex Disk
+// Download CSV content from Yandex Disk with detailed logging
 async function downloadCsv(filePath, oauthToken) {
     return new Promise((resolve, reject) => {
-        console.log('Downloading CSV from:', filePath);
+        console.log('=== DOWNLOAD CSV DEBUG ===');
+        console.log('FilePath:', filePath);
+        console.log('OAuth token length:', oauthToken ? oauthToken.length : 0);
         
         const options = {
             hostname: 'cloud-api.yandex.net',
@@ -266,33 +268,42 @@ async function downloadCsv(filePath, oauthToken) {
             }
         };
 
+        console.log('Download URL request path:', options.path);
+
         const req = https.request(options, (res) => {
             let data = '';
             res.on('data', (chunk) => data += chunk);
             res.on('end', () => {
                 console.log('Download URL response status:', res.statusCode);
+                console.log('Download URL response body:', data);
                 
                 if (res.statusCode === 404) {
-                    console.log('File not found, returning empty content');
+                    console.log('File not found (404), returning empty content');
                     resolve('');
                     return;
                 }
                 
                 if (res.statusCode !== 200) {
-                    console.log('Download URL error:', data);
+                    console.log('Download URL error, status:', res.statusCode, 'body:', data);
                     resolve('');
                     return;
                 }
                 
                 try {
                     const response = JSON.parse(data);
+                    console.log('Download href received:', response.href ? 'YES' : 'NO');
+                    
                     if (response.href) {
+                        console.log('Downloading file content from href...');
                         // Download actual file content
                         https.get(response.href, (fileRes) => {
                             let fileData = '';
+                            fileRes.setEncoding('utf8'); // Ensure UTF-8 encoding
                             fileRes.on('data', (chunk) => fileData += chunk);
                             fileRes.on('end', () => {
-                                console.log('File downloaded successfully, size:', fileData.length);
+                                console.log('File download status:', fileRes.statusCode);
+                                console.log('Downloaded bytes:', Buffer.byteLength(fileData, 'utf8'));
+                                console.log('Downloaded content preview:', fileData.substring(0, 100));
                                 resolve(fileData);
                             });
                         }).on('error', (error) => {
@@ -318,11 +329,13 @@ async function downloadCsv(filePath, oauthToken) {
     });
 }
 
-// Upload CSV content to Yandex Disk
+// Upload CSV content to Yandex Disk with detailed logging and verification
 async function uploadCsv(filePath, csvContent, oauthToken) {
     return new Promise((resolve, reject) => {
-        console.log('Uploading CSV to:', filePath);
+        console.log('=== UPLOAD CSV DEBUG ===');
+        console.log('FilePath:', filePath);
         console.log('CSV content length:', csvContent.length);
+        console.log('CSV content preview:', csvContent.substring(0, 100));
         
         // First get upload URL
         const options = {
@@ -334,57 +347,136 @@ async function uploadCsv(filePath, csvContent, oauthToken) {
             }
         };
 
+        console.log('Upload URL request path:', options.path);
+
         const req = https.request(options, (res) => {
             let data = '';
             res.on('data', (chunk) => data += chunk);
             res.on('end', () => {
                 console.log('Upload URL response status:', res.statusCode);
+                console.log('Upload URL response body:', data);
                 
                 if (res.statusCode !== 200) {
-                    console.error('Failed to get upload URL:', data);
+                    console.error('Failed to get upload URL, status:', res.statusCode, 'body:', data);
                     reject(new Error(`Upload URL error: ${res.statusCode}`));
                     return;
                 }
                 
                 try {
                     const response = JSON.parse(data);
+                    console.log('Upload href received:', response.href ? 'YES' : 'NO');
+                    
                     if (response.href) {
                         // Upload file content
                         const urlObj = new URL(response.href);
                         const buffer = Buffer.from(csvContent, 'utf8');
+                        
+                        console.log('Buffer size for upload:', buffer.length);
+                        console.log('Upload href:', response.href);
                         
                         const uploadOptions = {
                             hostname: urlObj.hostname,
                             path: urlObj.pathname + urlObj.search,
                             method: 'PUT',
                             headers: {
-                                'Content-Type': 'text/csv',
+                                'Content-Type': 'text/csv; charset=utf-8',
                                 'Content-Length': buffer.length
                             }
                         };
+
+                        console.log('Upload options:', uploadOptions);
 
                         const uploadReq = https.request(uploadOptions, (uploadRes) => {
                             let uploadData = '';
                             uploadRes.on('data', (chunk) => uploadData += chunk);
                             uploadRes.on('end', () => {
                                 console.log('Upload response status:', uploadRes.statusCode);
+                                console.log('Upload response body:', uploadData);
+                                
                                 if (uploadRes.statusCode >= 200 && uploadRes.statusCode < 300) {
-                                    console.log('CSV uploaded successfully');
-                                    resolve();
+                                    console.log('CSV uploaded successfully, verifying...');
+                                    
+                                    // Verify upload by checking file metadata
+                                    verifyFileUpload(filePath, oauthToken).then((verification) => {
+                                        console.log('Upload verification:', verification);
+                                        resolve();
+                                    }).catch((verifyError) => {
+                                        console.log('Verification failed but upload succeeded:', verifyError.message);
+                                        resolve(); // Still resolve since upload succeeded
+                                    });
                                 } else {
-                                    reject(new Error(`Upload failed: ${uploadRes.statusCode}`));
+                                    reject(new Error(`Upload failed: ${uploadRes.statusCode} - ${uploadData}`));
                                 }
                             });
                         });
 
-                        uploadReq.on('error', reject);
+                        uploadReq.on('error', (error) => {
+                            console.error('Upload request error:', error);
+                            reject(error);
+                        });
+                        
+                        console.log('Writing buffer to upload request...');
                         uploadReq.write(buffer);
                         uploadReq.end();
                     } else {
                         reject(new Error('No upload href in response'));
                     }
                 } catch (error) {
+                    console.error('Upload URL JSON parse error:', error);
                     reject(error);
+                }
+            });
+        });
+
+        req.on('error', (error) => {
+            console.error('Upload URL request error:', error);
+            reject(error);
+        });
+        req.end();
+    });
+}
+
+// Verify file upload by checking metadata
+async function verifyFileUpload(filePath, oauthToken) {
+    return new Promise((resolve, reject) => {
+        console.log('=== VERIFY UPLOAD ===');
+        console.log('Verifying file:', filePath);
+        
+        const options = {
+            hostname: 'cloud-api.yandex.net',
+            path: `/v1/disk/resources?path=${encodeURIComponent(filePath)}&fields=size,name,created`,
+            method: 'GET',
+            headers: {
+                'Authorization': `OAuth ${oauthToken}`
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => {
+                console.log('Verify response status:', res.statusCode);
+                console.log('Verify response body:', data);
+                
+                if (res.statusCode === 200) {
+                    try {
+                        const metadata = JSON.parse(data);
+                        console.log('File metadata:', {
+                            name: metadata.name,
+                            size: metadata.size,
+                            created: metadata.created
+                        });
+                        
+                        if (metadata.size === 0) {
+                            reject(new Error('File uploaded but has zero size!'));
+                        } else {
+                            resolve(metadata);
+                        }
+                    } catch (error) {
+                        reject(error);
+                    }
+                } else {
+                    reject(new Error(`Verification failed: ${res.statusCode}`));
                 }
             });
         });
@@ -413,7 +505,11 @@ async function registerStudent(student, oauthToken) {
         console.log('CSV preview:', csvContent.substring(0, 200));
         
         // 3. Parse with Papa.parse
-        let parsed = Papa.parse(csvContent, { header: true });
+        let parsed = Papa.parse(csvContent, { 
+            header: true, 
+            skipEmptyLines: true,
+            transformHeader: (header) => header.trim()
+        });
         let users = parsed.data.filter(u => u.telegramId && u.telegramId.trim());
         
         console.log('Parsed users count:', users.length);
@@ -465,7 +561,11 @@ async function getUser(telegramId, oauthToken) {
         
         console.log('Downloaded CSV for user lookup, length:', csvContent.length);
         
-        let parsed = Papa.parse(csvContent, { header: true });
+        let parsed = Papa.parse(csvContent, { 
+            header: true, 
+            skipEmptyLines: true,
+            transformHeader: (header) => header.trim()
+        });
         let users = parsed.data.filter(u => u.telegramId && u.telegramId.trim());
         
         console.log('Parsed users for lookup:', users.length);
@@ -492,5 +592,6 @@ module.exports = {
     downloadCsv,
     uploadCsv,
     registerStudent,
-    getUser
+    getUser,
+    verifyFileUpload
 };
