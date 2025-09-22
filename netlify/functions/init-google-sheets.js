@@ -15,23 +15,28 @@ exports.handler = async (event, context) => {
     try {
         const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
         const spreadsheetId = process.env.SPREADSHEET_ID;
+        const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+        const privateKey = process.env.GOOGLE_PRIVATE_KEY;
         
-        if (!serviceAccountJson || !spreadsheetId) {
+        // Check if we have either JSON format or separate variables
+        const hasJsonFormat = serviceAccountJson && spreadsheetId;
+        const hasSeparateFormat = clientEmail && privateKey && spreadsheetId;
+        
+        if (!hasJsonFormat && !hasSeparateFormat) {
             return {
                 statusCode: 500,
                 headers,
                 body: JSON.stringify({ 
                     success: false, 
-                    message: 'Required environment variables not set' 
+                    message: 'Required environment variables not set. Need either GOOGLE_SERVICE_ACCOUNT_JSON or separate Google credentials.',
+                    hasJsonFormat,
+                    hasSeparateFormat,
+                    hasSpreadsheetId: !!spreadsheetId
                 })
             };
         }
         
         // Initialize Google Sheets client
-        // Try to use separate environment variables first
-        const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-        const privateKey = process.env.GOOGLE_PRIVATE_KEY;
-        
         let serviceAccount;
         
         if (clientEmail && privateKey) {
