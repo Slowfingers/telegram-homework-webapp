@@ -6,15 +6,38 @@ const { google } = require('googleapis');
  */
 async function getGoogleSheetsClient() {
     try {
-        const serviceAccountJson = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+        // Try to use separate environment variables first
+        const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+        const privateKey = process.env.GOOGLE_PRIVATE_KEY;
         
-        // Fix private key format - replace literal \n with actual newlines
-        const privateKey = serviceAccountJson.private_key.replace(/\\n/g, '\n');
+        let serviceAccount;
+        
+        if (clientEmail && privateKey) {
+            // Use separate environment variables
+            serviceAccount = {
+                type: process.env.GOOGLE_SERVICE_ACCOUNT_TYPE || 'service_account',
+                project_id: process.env.GOOGLE_PROJECT_ID,
+                private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
+                private_key: privateKey,
+                client_email: clientEmail,
+                client_id: process.env.GOOGLE_CLIENT_ID,
+                auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+                token_uri: 'https://oauth2.googleapis.com/token',
+                auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+                client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${encodeURIComponent(clientEmail)}`,
+                universe_domain: 'googleapis.com'
+            };
+        } else {
+            // Fallback to JSON format
+            serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+            // Fix private key format - replace literal \n with actual newlines
+            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        }
         
         const jwtClient = new google.auth.JWT(
-            serviceAccountJson.client_email,
+            serviceAccount.client_email,
             null,
-            privateKey,
+            serviceAccount.private_key,
             ['https://www.googleapis.com/auth/spreadsheets']
         );
         

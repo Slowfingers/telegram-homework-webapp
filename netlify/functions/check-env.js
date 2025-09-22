@@ -13,9 +13,13 @@ exports.handler = async (event, context) => {
     // Check all required environment variables
     const envVars = {
         TELEGRAM_BOT_TOKEN: !!process.env.TELEGRAM_BOT_TOKEN,
-        GOOGLE_SERVICE_ACCOUNT_JSON: !!process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
         SPREADSHEET_ID: !!process.env.SPREADSHEET_ID,
-        YANDEX_DISK_TOKEN: !!process.env.YANDEX_DISK_TOKEN
+        YANDEX_DISK_TOKEN: !!process.env.YANDEX_DISK_TOKEN,
+        // Google credentials - check both formats
+        GOOGLE_SERVICE_ACCOUNT_JSON: !!process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
+        GOOGLE_CLIENT_EMAIL: !!process.env.GOOGLE_CLIENT_EMAIL,
+        GOOGLE_PRIVATE_KEY: !!process.env.GOOGLE_PRIVATE_KEY,
+        GOOGLE_PROJECT_ID: !!process.env.GOOGLE_PROJECT_ID
     };
 
     // Count how many are set
