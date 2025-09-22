@@ -22,6 +22,35 @@
             </div>
         </div>
 
+        <!-- Modal -->
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div id="modal-message"></div>
+            </div>
+        </div>
+
+        <!-- Loading Modal -->
+        <div id="loading-modal" class="loading-modal">
+            <div class="loading-content">
+                <div class="loading-spinner">
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                </div>
+                <div class="loading-text">
+                    <h3 id="loading-title">📤 Отправляем файл...</h3>
+                    <p id="loading-subtitle">Пожалуйста, подождите</p>
+                </div>
+                <div class="loading-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-text" id="progress-text">0%</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Loading Screen -->
         <div id="loadingScreen" class="screen active">
             <div class="loading-container">

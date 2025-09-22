@@ -497,13 +497,22 @@ async function handleHomeworkSubmission(e) {
             return;
         }
         
+        // Show loading animation
+        showLoadingModal('📤 Отправляем файл...', 'Подготавливаем файл к отправке');
+        updateProgress(10);
+        
         // Convert file to base64
+        updateProgress(30);
+        updateLoadingText('📤 Обрабатываем файл...', 'Конвертируем в нужный формат');
         const fileContent = await fileToBase64(file);
         const fileData = {
             fileName: file.name,
             fileContent: fileContent,
             fileType: file.type
         };
+        
+        updateProgress(50);
+        updateLoadingText('☁️ Загружаем в облако...', 'Сохраняем на Yandex.Disk');
         
         const response = await fetch(`${API_BASE_URL}/submit-homework-sheets`, {
             method: 'POST',
@@ -518,15 +527,27 @@ async function handleHomeworkSubmission(e) {
             })
         });
         
+        updateProgress(80);
+        updateLoadingText('📝 Сохраняем запись...', 'Обновляем базу данных');
+        
         const data = await response.json();
         
-        if (data.success) {
-            showModal('success', 'Домашнее задание успешно отправлено!');
-            e.target.reset();
-        } else {
-            showModal('error', data.message || 'Ошибка при отправке задания');
-        }
+        updateProgress(100);
+        
+        // Hide loading modal after a short delay
+        setTimeout(() => {
+            hideLoadingModal();
+            
+            if (data.success) {
+                showModal('success', 'Домашнее задание успешно отправлено!');
+                e.target.reset();
+            } else {
+                showModal('error', data.message || 'Ошибка при отправке задания');
+            }
+        }, 500);
+        
     } catch (error) {
+        hideLoadingModal();
         console.log('Backend not available, using mock mode');
         showModal('success', 'Домашнее задание успешно отправлено! (демо режим)');
         e.target.reset();
@@ -869,4 +890,55 @@ function displaySubmissions(submissions) {
         
         container.appendChild(card);
     });
+}
+
+// Loading modal functions
+function showLoadingModal(title = 'Загрузка...', subtitle = 'Пожалуйста, подождите') {
+    const modal = document.getElementById('loading-modal');
+    const titleEl = document.getElementById('loading-title');
+    const subtitleEl = document.getElementById('loading-subtitle');
+    
+    if (modal && titleEl && subtitleEl) {
+        titleEl.textContent = title;
+        subtitleEl.textContent = subtitle;
+        modal.classList.add('show');
+        modal.style.display = 'block';
+        
+        // Reset progress
+        updateProgress(0);
+    }
+}
+
+function hideLoadingModal() {
+    const modal = document.getElementById('loading-modal');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.classList.add('hide');
+        
+        setTimeout(() => {
+            modal.style.display = 'none';
+            modal.classList.remove('hide');
+        }, 300);
+    }
+}
+
+function updateLoadingText(title, subtitle) {
+    const titleEl = document.getElementById('loading-title');
+    const subtitleEl = document.getElementById('loading-subtitle');
+    
+    if (titleEl) titleEl.textContent = title;
+    if (subtitleEl) subtitleEl.textContent = subtitle;
+}
+
+function updateProgress(percentage) {
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    
+    if (progressFill) {
+        progressFill.style.width = `${percentage}%`;
+    }
+    
+    if (progressText) {
+        progressText.textContent = `${percentage}%`;
+    }
 }
