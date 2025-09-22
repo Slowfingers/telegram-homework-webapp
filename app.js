@@ -251,7 +251,13 @@ function showMainScreen() {
     }
     
     if (userClass) {
-        userClass.textContent = currentUser.class;
+        if (currentUser.role === 'admin') {
+            userClass.textContent = 'Администратор';
+        } else if (currentUser.role === 'teacher') {
+            userClass.textContent = `Учитель (${currentUser.subject || 'Предмет не указан'})`;
+        } else {
+            userClass.textContent = currentUser.class || 'Класс не указан';
+        }
     }
     
     // Show/hide admin button based on user role
@@ -483,7 +489,7 @@ async function handleAddAssignment(e) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                telegramId: currentUser.telegramId,
+                adminId: currentUser.telegramId,
                 class: classValue,
                 subject: subject,
                 description: description,
