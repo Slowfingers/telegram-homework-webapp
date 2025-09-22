@@ -92,8 +92,10 @@ exports.handler = async (event, context) => {
                     message: 'Failed to create JWT client',
                     error: jwtError.message,
                     clientEmail: serviceAccount.client_email,
-                    privateKeyLength: privateKey.length,
-                    privateKeyStart: privateKey.substring(0, 100)
+                    privateKeyLength: serviceAccount.private_key.length,
+                    privateKeyStart: serviceAccount.private_key.substring(0, 100),
+                    privateKeyHasBegin: serviceAccount.private_key.includes('-----BEGIN PRIVATE KEY-----'),
+                    privateKeyHasEnd: serviceAccount.private_key.includes('-----END PRIVATE KEY-----')
                 })
             };
         }
@@ -110,7 +112,12 @@ exports.handler = async (event, context) => {
                     message: 'Failed to authorize JWT client',
                     error: authError.message,
                     errorCode: authError.code,
-                    errorDetails: authError.details
+                    errorDetails: authError.details,
+                    clientEmail: serviceAccount.client_email,
+                    projectId: serviceAccount.project_id,
+                    privateKeyLength: serviceAccount.private_key.length,
+                    privateKeyStart: serviceAccount.private_key.substring(0, 50),
+                    privateKeyEnd: serviceAccount.private_key.substring(serviceAccount.private_key.length - 50)
                 })
             };
         }
