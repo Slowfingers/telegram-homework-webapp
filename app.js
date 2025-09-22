@@ -498,12 +498,12 @@ async function handleHomeworkSubmission(e) {
         }
         
         // Show loading animation
-        showLoadingModal('📤 Отправляем файл...', 'Подготавливаем файл к отправке');
+        showLoadingModal('📤 Готовим твою работу...', 'Проверяем, что всё на месте');
         updateProgress(10);
         
         // Convert file to base64
         updateProgress(30);
-        updateLoadingText('📤 Обрабатываем файл...', 'Конвертируем в нужный формат');
+        updateLoadingText('🎒 Упаковываем в рюкзачок...', 'Делаем файл удобным для отправки');
         const fileContent = await fileToBase64(file);
         const fileData = {
             fileName: file.name,
@@ -512,7 +512,7 @@ async function handleHomeworkSubmission(e) {
         };
         
         updateProgress(50);
-        updateLoadingText('☁️ Загружаем в облако...', 'Сохраняем на Yandex.Disk');
+        updateLoadingText('🚀 Файл летит к учителю...', 'Твоя работа уже в пути!');
         
         const response = await fetch(`${API_BASE_URL}/submit-homework-sheets`, {
             method: 'POST',
@@ -528,7 +528,7 @@ async function handleHomeworkSubmission(e) {
         });
         
         updateProgress(80);
-        updateLoadingText('📝 Сохраняем запись...', 'Обновляем базу данных');
+        updateLoadingText('✨ Почти готово...', 'Отмечаем, что ты сдал работу');
         
         const data = await response.json();
         
