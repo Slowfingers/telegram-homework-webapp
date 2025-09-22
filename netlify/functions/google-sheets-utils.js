@@ -7,10 +7,14 @@ const { google } = require('googleapis');
 async function getGoogleSheetsClient() {
     try {
         const serviceAccountJson = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+        
+        // Fix private key format - replace literal \n with actual newlines
+        const privateKey = serviceAccountJson.private_key.replace(/\\n/g, '\n');
+        
         const jwtClient = new google.auth.JWT(
             serviceAccountJson.client_email,
             null,
-            serviceAccountJson.private_key,
+            privateKey,
             ['https://www.googleapis.com/auth/spreadsheets']
         );
         

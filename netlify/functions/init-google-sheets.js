@@ -29,10 +29,14 @@ exports.handler = async (event, context) => {
         
         // Initialize Google Sheets client
         const serviceAccount = JSON.parse(serviceAccountJson);
+        
+        // Fix private key format - replace literal \n with actual newlines
+        const privateKey = serviceAccount.private_key.replace(/\\n/g, '\n');
+        
         const jwtClient = new google.auth.JWT(
             serviceAccount.client_email,
             null,
-            serviceAccount.private_key,
+            privateKey,
             ['https://www.googleapis.com/auth/spreadsheets']
         );
         
