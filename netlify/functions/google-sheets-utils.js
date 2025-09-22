@@ -37,12 +37,13 @@ async function getGoogleSheetsClient() {
             serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
         }
         
-        const jwtClient = new google.auth.JWT(
-            serviceAccount.client_email,
-            null,
-            serviceAccount.private_key,
-            ['https://www.googleapis.com/auth/spreadsheets']
-        );
+        // Try using GoogleAuth.fromJSON instead of JWT directly
+        const auth = new google.auth.GoogleAuth({
+            credentials: serviceAccount,
+            scopes: ['https://www.googleapis.com/auth/spreadsheets']
+        });
+        
+        const jwtClient = await auth.getClient();
         
         // Authorize the JWT client
         await jwtClient.authorize();
