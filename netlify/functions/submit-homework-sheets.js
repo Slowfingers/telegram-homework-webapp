@@ -1,16 +1,21 @@
 const { submitHomework, getUser } = require('./google-sheets-utils');
 const { uploadFileToYandexDisk } = require('./yandex-disk-utils');
+const { checkRateLimit } = require('./rate-limiter');
 const crypto = require('crypto');
 
 // Telegram Bot Token (set in Netlify environment variables)
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 exports.handler = async (event, context) => {
-    // Set CORS headers
+    // Set CORS headers with security headers
     const headers = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'X-XSS-Protection': '1; mode=block',
+        'Referrer-Policy': 'strict-origin-when-cross-origin'
     };
 
     if (event.httpMethod === 'OPTIONS') {
@@ -34,6 +39,23 @@ exports.handler = async (event, context) => {
                 statusCode: 400,
                 headers,
                 body: JSON.stringify({ success: false, message: 'Missing required fields' })
+            };
+        }
+
+        // Check rate limit
+        const rateCheck = checkRateLimit(telegramId, 'submit-homework');
+        if (!rateCheck.allowed) {
+            return {
+                statusCode: 429,
+                headers: {
+                    ...headers,
+                    'X-RateLimit-Remaining': '0',
+                    'X-RateLimit-Reset': rateCheck.resetTime.toString()
+                },
+                body: JSON.stringify({ 
+                    success: false, 
+                    message: 'Слишком много файлов отправлено. Попробуйте через минуту.' 
+                })
             };
         }
 

@@ -155,7 +155,7 @@ async function checkUserRegistration() {
         if (data.success && data.user) {
             // User is registered
             currentUser = data.user;
-            console.log('User found:', currentUser);
+            console.log('User authenticated:', { role: currentUser.role || 'student', hasClass: !!currentUser.class });
             showMainScreen();
         } else {
             // User needs to register
