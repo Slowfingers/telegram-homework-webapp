@@ -503,7 +503,7 @@ async function handleHomeworkSubmission(e) {
         
         // Convert file to base64
         updateProgress(30);
-        updateLoadingText('🎒 Упаковываем в рюкзачок...', 'Делаем файл удобным для отправки');
+        updateLoadingText('🎒 Упаковываем в рюкзак...', 'Делаем файл удобным для отправки');
         const fileContent = await fileToBase64(file);
         const fileData = {
             fileName: file.name,
