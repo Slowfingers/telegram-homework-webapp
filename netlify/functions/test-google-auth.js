@@ -15,8 +15,14 @@ exports.handler = async (event, context) => {
     try {
         const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
         const spreadsheetId = process.env.SPREADSHEET_ID;
+        const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+        const privateKey = process.env.GOOGLE_PRIVATE_KEY;
         
-        if (!serviceAccountJson || !spreadsheetId) {
+        // Check if we have either JSON format or separate variables
+        const hasJsonFormat = serviceAccountJson && spreadsheetId;
+        const hasSeparateFormat = clientEmail && privateKey && spreadsheetId;
+        
+        if (!hasJsonFormat && !hasSeparateFormat) {
             return {
                 statusCode: 200,
                 headers,
@@ -24,35 +30,57 @@ exports.handler = async (event, context) => {
                     success: false, 
                     message: 'Required environment variables not set',
                     hasServiceAccount: !!serviceAccountJson,
-                    hasSpreadsheetId: !!spreadsheetId
+                    hasSpreadsheetId: !!spreadsheetId,
+                    hasClientEmail: !!clientEmail,
+                    hasPrivateKey: !!privateKey,
+                    hasJsonFormat,
+                    hasSeparateFormat
                 })
             };
         }
 
         let serviceAccount;
-        try {
-            serviceAccount = JSON.parse(serviceAccountJson);
-        } catch (parseError) {
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify({
-                    success: false,
-                    message: 'Failed to parse service account JSON',
-                    error: parseError.message
-                })
+        
+        if (clientEmail && privateKey) {
+            // Use separate environment variables
+            serviceAccount = {
+                type: process.env.GOOGLE_SERVICE_ACCOUNT_TYPE || 'service_account',
+                project_id: process.env.GOOGLE_PROJECT_ID,
+                private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
+                private_key: privateKey,
+                client_email: clientEmail,
+                client_id: process.env.GOOGLE_CLIENT_ID,
+                auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+                token_uri: 'https://oauth2.googleapis.com/token',
+                auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+                client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${encodeURIComponent(clientEmail)}`,
+                universe_domain: 'googleapis.com'
             };
+        } else {
+            // Fallback to JSON format
+            try {
+                serviceAccount = JSON.parse(serviceAccountJson);
+                // Fix private key format - replace literal \n with actual newlines
+                serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+            } catch (parseError) {
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({
+                        success: false,
+                        message: 'Failed to parse service account JSON',
+                        error: parseError.message
+                    })
+                };
+            }
         }
-
-        // Fix private key format
-        const privateKey = serviceAccount.private_key.replace(/\\n/g, '\n');
         
         let jwtClient;
         try {
             jwtClient = new google.auth.JWT(
                 serviceAccount.client_email,
                 null,
-                privateKey,
+                serviceAccount.private_key,
                 ['https://www.googleapis.com/auth/spreadsheets']
             );
         } catch (jwtError) {
