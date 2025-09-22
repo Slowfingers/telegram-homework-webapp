@@ -299,6 +299,42 @@
                         <div class="btn-ripple"></div>
                     </button>
                 </form>
+                
+                <div class="admin-actions">
+                    <button id="view-submissions-btn" class="btn-modern btn-secondary">
+                        <span class="btn-text">📊 Просмотр отправленных работ</span>
+                        <div class="btn-ripple"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submissions View Screen -->
+        <div id="submissionsScreen" class="screen">
+            <div class="container">
+                <div class="screen-header">
+                    <button class="back-btn">
+                        <span class="back-icon">←</span>
+                    </button>
+                    <h1 class="screen-title">📊 Отправленные работы</h1>
+                </div>
+                
+                <div class="submissions-filters">
+                    <div class="form-group">
+                        <select id="submissions-homework-filter" class="modern-select">
+                            <option value="">Все задания</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <select id="submissions-class-filter" class="modern-select">
+                            <option value="">Все классы</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="submissions-list" class="submissions-container">
+                    <!-- Submissions will be loaded here -->
+                </div>
             </div>
         </div>
     </div>

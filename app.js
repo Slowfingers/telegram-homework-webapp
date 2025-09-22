@@ -120,6 +120,15 @@ function setupEventListeners() {
         adminForm.addEventListener('submit', handleAddAssignment);
     }
     
+    // View submissions button
+    const viewSubmissionsBtn = document.getElementById('view-submissions-btn');
+    if (viewSubmissionsBtn) {
+        viewSubmissionsBtn.addEventListener('click', () => {
+            showScreen('submissionsScreen');
+            loadSubmissions();
+        });
+    }
+    
     // File upload
     setupFileUpload();
 }
@@ -260,14 +269,21 @@ function showMainScreen() {
         }
     }
     
-    // Show/hide admin button based on user role
+    // Show/hide buttons based on user role
     const adminBtn = document.getElementById('admin-btn');
-    if (adminBtn) {
-        if (currentUser.role === 'admin' || currentUser.role === 'teacher') {
-            adminBtn.style.display = 'block';
-        } else {
-            adminBtn.style.display = 'none';
-        }
+    const checkHomeworkBtn = document.getElementById('check-homework-btn');
+    const submitHomeworkBtn = document.getElementById('submit-homework-btn');
+    
+    if (currentUser.role === 'admin' || currentUser.role === 'teacher') {
+        // Admin/Teacher interface
+        if (adminBtn) adminBtn.style.display = 'block';
+        if (checkHomeworkBtn) checkHomeworkBtn.style.display = 'block'; // Админы могут смотреть ДЗ
+        if (submitHomeworkBtn) submitHomeworkBtn.style.display = 'none'; // Админы не сдают ДЗ
+    } else {
+        // Student interface
+        if (adminBtn) adminBtn.style.display = 'none';
+        if (checkHomeworkBtn) checkHomeworkBtn.style.display = 'block';
+        if (submitHomeworkBtn) submitHomeworkBtn.style.display = 'block';
     }
     
     showScreen('mainScreen');
@@ -683,5 +699,72 @@ function fileToBase64(file) {
             resolve(base64);
         };
         reader.onerror = error => reject(error);
+    });
+}
+
+// Load submissions for admin
+async function loadSubmissions() {
+    try {
+        if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'teacher')) {
+            showModal('error', 'Доступ запрещен');
+            return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/get-submissions?adminId=${currentUser.telegramId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            displaySubmissions(data.submissions);
+        } else {
+            displaySubmissions([]);
+        }
+    } catch (error) {
+        console.log('Error loading submissions:', error);
+        displaySubmissions([]);
+    }
+}
+
+// Display submissions
+function displaySubmissions(submissions) {
+    const container = document.getElementById('submissions-list');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (submissions.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--tg-theme-hint-color, #666666);">Пока никто не сдал работы</p>';
+        return;
+    }
+
+    submissions.forEach(submission => {
+        const card = document.createElement('div');
+        card.className = 'submission-card';
+        
+        card.innerHTML = `
+            <div class="submission-header">
+                <div class="submission-student">
+                    <strong>${submission.student.lastName} ${submission.student.firstName}</strong>
+                    <span class="submission-class">${submission.student.class}</span>
+                </div>
+                <div class="submission-date">${formatDate(submission.submittedAt)}</div>
+            </div>
+            <div class="submission-file">
+                <span class="file-icon">📎</span>
+                <a href="${submission.fileUrl}" target="_blank" class="file-link">
+                    ${submission.fileName}
+                </a>
+            </div>
+            <div class="submission-homework">
+                Задание ID: ${submission.homeworkId}
+            </div>
+        `;
+        
+        container.appendChild(card);
     });
 }
