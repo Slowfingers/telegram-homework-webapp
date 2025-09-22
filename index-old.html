@@ -142,7 +142,7 @@
         <div id="assignmentsScreen" class="screen">
             <div class="container">
                 <div class="screen-header">
-                    <button class="back-btn">
+                    <button id="back-from-check" class="back-btn">
                         <span class="back-icon">←</span>
                     </button>
                     <h1 class="screen-title">📚 Домашние задания</h1>
@@ -171,7 +171,7 @@
         <div id="submissionScreen" class="screen">
             <div class="container">
                 <div class="screen-header">
-                    <button class="back-btn">
+                    <button id="back-from-submit" class="back-btn">
                         <span class="back-icon">←</span>
                     </button>
                     <h1 class="screen-title">📝 Сдать домашку</h1>
@@ -227,7 +227,7 @@
         <div id="adminScreen" class="screen">
             <div class="container">
                 <div class="screen-header">
-                    <button class="back-btn">
+                    <button id="back-from-admin" class="back-btn">
                         <span class="back-icon">←</span>
                     </button>
                     <h1 class="screen-title">⚙️ Админ панель</h1>
@@ -237,7 +237,7 @@
                     <div class="form-group">
                         <label for="assignment-date" class="form-label">
                             <span class="label-icon">📅</span>
-                            Дата сдачи
+                            Дата задания
                         </label>
                         <input type="date" id="assignment-date" class="modern-input" required>
                     </div>
@@ -269,17 +269,25 @@
                     <div class="form-group">
                         <label for="assignment-topic" class="form-label">
                             <span class="label-icon">📖</span>
-                            Предмет
+                            Тема
                         </label>
-                        <input type="text" id="assignment-topic" class="modern-input" placeholder="Например: Математика" required>
+                        <input type="text" id="assignment-topic" class="modern-input" placeholder="Например: Алгоритмы сортировки" required>
                     </div>
                     
                     <div class="form-group">
                         <label for="assignment-description" class="form-label">
                             <span class="label-icon">📝</span>
-                            Описание задания
+                            Описание
                         </label>
                         <textarea id="assignment-description" class="modern-textarea" placeholder="Подробное описание задания..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="assignment-link" class="form-label">
+                            <span class="label-icon">🔗</span>
+                            Ссылка на материал (необязательно)
+                        </label>
+                        <input type="url" id="assignment-link" class="modern-input" placeholder="https://example.com/material">
                     </div>
                     
                     <button type="submit" class="btn-modern btn-primary">
@@ -289,6 +297,79 @@
                 </form>
             </div>
         </div>
+
+        <!-- Error Screen -->
+        <div id="error-screen" class="screen">
+            <div class="container">
+                <div class="error-content">
+                    <div class="error-icon">😕</div>
+                    <h1 class="error-title">Упс! Что-то пошло не так</h1>
+                    <p id="error-message" class="error-message"></p>
+                    <button id="retry-btn" class="btn-modern btn-primary">
+                        <span class="btn-text">Попробовать снова</span>
+                        <div class="btn-ripple"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Panel -->
+        <div id="debugPanel" class="debug-panel">
+            <div class="debug-header">
+                <h4>🐛 Debug Info</h4>
+                <button onclick="toggleDebug()" class="debug-toggle">❌</button>
+            </div>
+            <div class="debug-content">
+                <div class="debug-section">
+                    <strong>Current User:</strong>
+                    <pre id="debugCurrentUser">null</pre>
+                </div>
+                <div class="debug-section">
+                    <strong>Last API Response:</strong>
+                    <pre id="debugApiResponse">none</pre>
+                </div>
+                <div class="debug-section">
+                    <strong>Telegram Data:</strong>
+                    <pre id="debugTelegramData">none</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Toggle Button -->
+        <button id="debugToggleBtn" onclick="toggleDebug()" class="debug-btn">🐛</button>
+
+        <!-- Success Modal -->
+        <div id="successModal" class="modal">
+            <div class="modal-content success">
+                <div class="modal-header">
+                    <h3>✅ Успех</h3>
+                </div>
+                <div class="modal-body">
+                    <p id="successMessage"></p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="closeModal('success')">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Log Panel -->
+        <div id="debug-panel" class="fixed bottom-0 left-0 right-0 bg-gray-900 text-green-400 text-xs p-2 max-h-32 overflow-y-auto hidden">
+            <div class="flex justify-between items-center mb-1">
+                <span class="font-bold">Debug Logs:</span>
+                <div class="flex gap-2">
+                    <button onclick="clearAppData()" class="text-yellow-400 hover:text-yellow-300 text-xs">🗑️ Clear</button>
+                    <button onclick="toggleDebugPanel()" class="text-red-400 hover:text-red-300">✕</button>
+                </div>
+            </div>
+            <div id="debug-logs" class="space-y-1"></div>
+        </div>
+
+        <!-- Debug Toggle Button (hidden by default) -->
+        <button id="debug-toggle" onclick="toggleDebugPanel()" class="fixed bottom-4 right-4 bg-blue-600 text-white p-2 rounded-full shadow-lg z-50 hidden">
+            🐛
+        </button>
+
     </div>
 
     <script src="app.js" defer></script>
