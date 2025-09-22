@@ -396,6 +396,59 @@ function prefillSubmissionForm() {
     if (submitClass) submitClass.textContent = currentUser.class;
     if (submitLastName) submitLastName.textContent = currentUser.lastName;
     if (submitFirstName) submitFirstName.textContent = currentUser.firstName;
+    
+    // Load available homework for submission
+    loadHomeworkForSubmission();
+}
+
+// Load homework assignments for submission
+async function loadHomeworkForSubmission() {
+    try {
+        if (!currentUser || !currentUser.class) return;
+        
+        const response = await fetch(`${API_BASE_URL}/get-homework?class=${currentUser.class}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        const homeworkSelect = document.getElementById('homework-select');
+        
+        if (!homeworkSelect) return;
+        
+        homeworkSelect.innerHTML = '<option value="">Выберите задание</option>';
+        
+        if (data.success && data.homework) {
+            // Filter current assignments only
+            const now = new Date();
+            const currentAssignments = data.homework.filter(hw => {
+                const deadline = new Date(hw.deadline);
+                return deadline >= now;
+            });
+            
+            if (currentAssignments.length === 0) {
+                homeworkSelect.innerHTML = '<option value="">Нет доступных заданий</option>';
+                return;
+            }
+            
+            currentAssignments.forEach(hw => {
+                const option = document.createElement('option');
+                option.value = hw.id;
+                option.textContent = `${hw.subject} - ${formatDate(hw.deadline)}`;
+                homeworkSelect.appendChild(option);
+            });
+        } else {
+            homeworkSelect.innerHTML = '<option value="">Нет доступных заданий</option>';
+        }
+    } catch (error) {
+        console.log('Error loading homework for submission:', error);
+        const homeworkSelect = document.getElementById('homework-select');
+        if (homeworkSelect) {
+            homeworkSelect.innerHTML = '<option value="mock">Тестовое задание (демо режим)</option>';
+        }
+    }
 }
 
 // Handle homework submission
@@ -409,6 +462,12 @@ async function handleHomeworkSubmission(e) {
         }
         
         const fileInput = document.getElementById('homework-file');
+        const homeworkSelect = document.getElementById('homework-select');
+        
+        if (!homeworkSelect || !homeworkSelect.value) {
+            showModal('error', 'Пожалуйста, выберите задание');
+            return;
+        }
         
         if (!fileInput || !fileInput.files.length) {
             showModal('error', 'Пожалуйста, выберите файл для отправки');
@@ -437,7 +496,7 @@ async function handleHomeworkSubmission(e) {
             },
             body: JSON.stringify({
                 telegramId: currentUser.telegramId,
-                homeworkId: '1', // TODO: Select from available homework
+                homeworkId: homeworkSelect.value,
                 initData: tg.initData,
                 fileData: fileData
             })
