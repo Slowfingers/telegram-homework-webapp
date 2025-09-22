@@ -61,9 +61,11 @@ exports.handler = async (event, context) => {
 
         // Check private key format
         const privateKey = serviceAccount.private_key;
+        const fixedPrivateKey = privateKey.replace(/\\n/g, '\n');
         const hasBeginMarker = privateKey.includes('-----BEGIN PRIVATE KEY-----');
         const hasEndMarker = privateKey.includes('-----END PRIVATE KEY-----');
-        const hasNewlines = privateKey.includes('\\n');
+        const hasLiteralNewlines = privateKey.includes('\\n');
+        const hasActualNewlines = fixedPrivateKey.includes('\n');
 
         return {
             statusCode: 200,
@@ -76,11 +78,14 @@ exports.handler = async (event, context) => {
                     project_id: serviceAccount.project_id,
                     client_email: serviceAccount.client_email,
                     privateKeyLength: privateKey.length,
+                    fixedPrivateKeyLength: fixedPrivateKey.length,
                     hasBeginMarker,
                     hasEndMarker,
-                    hasNewlines,
+                    hasLiteralNewlines,
+                    hasActualNewlines,
                     privateKeyStart: privateKey.substring(0, 50),
-                    privateKeyEnd: privateKey.substring(privateKey.length - 50)
+                    privateKeyEnd: privateKey.substring(privateKey.length - 50),
+                    fixedPrivateKeyStart: fixedPrivateKey.substring(0, 50)
                 }
             })
         };
