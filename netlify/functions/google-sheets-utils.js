@@ -37,19 +37,14 @@ async function getGoogleSheetsClient() {
             serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
         }
         
-        // Try using GoogleAuth.fromJSON instead of JWT directly
+        // Use GoogleAuth directly
         const auth = new google.auth.GoogleAuth({
             credentials: serviceAccount,
             scopes: ['https://www.googleapis.com/auth/spreadsheets']
         });
         
-        const jwtClient = await auth.getClient();
-        
-        // Authorize the JWT client
-        await jwtClient.authorize();
-        
-        // Create and return Google Sheets API client
-        const sheets = google.sheets({ version: 'v4', auth: jwtClient });
+        // Create and return Google Sheets API client with auth
+        const sheets = google.sheets({ version: 'v4', auth });
         return sheets;
     } catch (error) {
         console.error('Error initializing Google Sheets client:', error);

@@ -64,17 +64,13 @@ exports.handler = async (event, context) => {
             serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
         }
         
-        const jwtClient = new google.auth.JWT(
-            serviceAccount.client_email,
-            null,
-            serviceAccount.private_key,
-            ['https://www.googleapis.com/auth/spreadsheets']
-        );
+        // Use GoogleAuth directly
+        const auth = new google.auth.GoogleAuth({
+            credentials: serviceAccount,
+            scopes: ['https://www.googleapis.com/auth/spreadsheets']
+        });
         
-        // Authorize the JWT client
-        await jwtClient.authorize();
-        
-        const sheets = google.sheets({ version: 'v4', auth: jwtClient });
+        const sheets = google.sheets({ version: 'v4', auth });
         
         // Get spreadsheet information
         const spreadsheet = await sheets.spreadsheets.get({
