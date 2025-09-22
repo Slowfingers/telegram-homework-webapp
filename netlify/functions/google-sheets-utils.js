@@ -4,7 +4,7 @@ const { google } = require('googleapis');
  * Initialize Google Sheets API client with service account credentials
  * @returns {Object} Authenticated Google Sheets API client
  */
-function getGoogleSheetsClient() {
+async function getGoogleSheetsClient() {
     try {
         const serviceAccountJson = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
         const jwtClient = new google.auth.JWT(
@@ -13,6 +13,9 @@ function getGoogleSheetsClient() {
             serviceAccountJson.private_key,
             ['https://www.googleapis.com/auth/spreadsheets']
         );
+        
+        // Authorize the JWT client
+        await jwtClient.authorize();
         
         // Create and return Google Sheets API client
         const sheets = google.sheets({ version: 'v4', auth: jwtClient });
@@ -45,7 +48,7 @@ function getSpreadsheetId() {
  */
 async function registerStudent(telegramId, classGroup, lastName, firstName) {
     try {
-        const sheets = getGoogleSheetsClient();
+        const sheets = await getGoogleSheetsClient();
         const spreadsheetId = getSpreadsheetId();
         
         // First check if student exists
@@ -110,7 +113,7 @@ async function registerStudent(telegramId, classGroup, lastName, firstName) {
  */
 async function getTeacher(telegramId) {
     try {
-        const sheets = getGoogleSheetsClient();
+        const sheets = await getGoogleSheetsClient();
         const spreadsheetId = getSpreadsheetId();
         
         // Check if Teachers sheet exists
@@ -175,7 +178,7 @@ async function isAdmin(telegramId) {
  */
 async function getUser(telegramId) {
     try {
-        const sheets = getGoogleSheetsClient();
+        const sheets = await getGoogleSheetsClient();
         const spreadsheetId = getSpreadsheetId();
         
         // First check if user is a teacher
@@ -240,7 +243,7 @@ async function addHomework(adminId, classGroup, subject, description, deadline) 
             };
         }
         
-        const sheets = getGoogleSheetsClient();
+        const sheets = await getGoogleSheetsClient();
         const spreadsheetId = getSpreadsheetId();
         
         // Get existing homework to determine the next ID
@@ -296,7 +299,7 @@ async function addHomework(adminId, classGroup, subject, description, deadline) 
  */
 async function getHomework(classGroup) {
     try {
-        const sheets = getGoogleSheetsClient();
+        const sheets = await getGoogleSheetsClient();
         const spreadsheetId = getSpreadsheetId();
         
         // Get all homework
@@ -344,7 +347,7 @@ async function getHomework(classGroup) {
  */
 async function submitHomework(telegramId, homeworkId, fileUrl) {
     try {
-        const sheets = getGoogleSheetsClient();
+        const sheets = await getGoogleSheetsClient();
         const spreadsheetId = getSpreadsheetId();
         
         // Get user info

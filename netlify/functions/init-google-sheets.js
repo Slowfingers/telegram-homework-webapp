@@ -36,6 +36,9 @@ exports.handler = async (event, context) => {
             ['https://www.googleapis.com/auth/spreadsheets']
         );
         
+        // Authorize the JWT client
+        await jwtClient.authorize();
+        
         const sheets = google.sheets({ version: 'v4', auth: jwtClient });
         
         // Get spreadsheet information
