@@ -46,7 +46,7 @@ exports.handler = async (event, context) => {
         // Get submissions
         const submissionsResponse = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: 'Submissions!A:F'
+            range: 'Submissions!A:G'
         });
 
         const submissionRows = submissionsResponse.data.values || [];
@@ -54,12 +54,13 @@ exports.handler = async (event, context) => {
 
         if (submissionRows.length > 1) {
             submissions = submissionRows.slice(1).map(row => ({
-                id: row[0],
-                homeworkId: row[1],
-                studentId: row[2],
-                fileName: row[3],
-                fileUrl: row[4],
-                submittedAt: row[5]
+                studentId: row[0],
+                studentName: row[1],
+                class: row[2],
+                homeworkId: row[3],
+                submittedAt: row[4],
+                fileUrl: row[5],
+                status: row[6] || 'Submitted'
             }));
         }
 
@@ -68,50 +69,18 @@ exports.handler = async (event, context) => {
             submissions = submissions.filter(sub => sub.homeworkId === homeworkId);
         }
 
-        // Get student names for submissions
-        const studentsResponse = await sheets.spreadsheets.values.get({
-            spreadsheetId,
-            range: 'Students!A:D'
-        });
-
-        const studentRows = studentsResponse.data.values || [];
-        const studentsMap = {};
-
-        if (studentRows.length > 1) {
-            studentRows.slice(1).forEach(row => {
-                studentsMap[row[0]] = {
-                    class: row[1],
-                    lastName: row[2],
-                    firstName: row[3]
-                };
-            });
-        }
-
         // Filter by class if provided
         if (classGroup) {
-            submissions = submissions.filter(sub => {
-                const student = studentsMap[sub.studentId];
-                return student && student.class === classGroup;
-            });
+            submissions = submissions.filter(sub => sub.class === classGroup);
         }
-
-        // Enrich submissions with student data
-        const enrichedSubmissions = submissions.map(sub => ({
-            ...sub,
-            student: studentsMap[sub.studentId] || {
-                class: 'Unknown',
-                lastName: 'Unknown',
-                firstName: 'Student'
-            }
-        }));
 
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({
                 success: true,
-                submissions: enrichedSubmissions,
-                total: enrichedSubmissions.length
+                submissions: submissions,
+                total: submissions.length
             })
         };
 

@@ -420,14 +420,14 @@ async function submitHomework(telegramId, homeworkId, fileUrl) {
         const nextRow = submissionRows.length + 1;
         const submissionDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
         
-        // Add submission
-        const range = `Submissions!A${nextRow}:F${nextRow}`;
+        // Add submission with student name
+        const range = `Submissions!A${nextRow}:G${nextRow}`;
         await sheets.spreadsheets.values.update({
             spreadsheetId,
             range,
             valueInputOption: 'USER_ENTERED',
             resource: {
-                values: [[telegramId, user.class, homeworkId, submissionDate, fileUrl, 'Submitted']]
+                values: [[telegramId, user.firstName, user.class, homeworkId, submissionDate, fileUrl, 'Submitted']]
             }
         });
         

@@ -115,7 +115,7 @@ exports.handler = async (event, context) => {
             },
             {
                 name: 'Submissions',
-                headers: ['Telegram ID', 'Class', 'Homework ID', 'Submission Date', 'File URL', 'Status']
+                headers: ['Telegram ID', 'Student Name', 'Class', 'Homework ID', 'Submission Date', 'File URL', 'Status']
             },
             {
                 name: 'Teachers',

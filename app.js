@@ -275,9 +275,9 @@ function showMainScreen() {
     const submitHomeworkBtn = document.getElementById('submit-homework-btn');
     
     if (currentUser.role === 'admin' || currentUser.role === 'teacher') {
-        // Admin/Teacher interface
+        // Admin/Teacher interface - show only admin panel
         if (adminBtn) adminBtn.style.display = 'block';
-        if (checkHomeworkBtn) checkHomeworkBtn.style.display = 'block'; // Админы могут смотреть ДЗ
+        if (checkHomeworkBtn) checkHomeworkBtn.style.display = 'none'; // Админы не смотрят ДЗ как ученики
         if (submitHomeworkBtn) submitHomeworkBtn.style.display = 'none'; // Админы не сдают ДЗ
     } else {
         // Student interface
@@ -749,19 +749,19 @@ function displaySubmissions(submissions) {
         card.innerHTML = `
             <div class="submission-header">
                 <div class="submission-student">
-                    <strong>${submission.student.lastName} ${submission.student.firstName}</strong>
-                    <span class="submission-class">${submission.student.class}</span>
+                    <strong>${submission.studentName}</strong>
+                    <span class="submission-class">${submission.class}</span>
                 </div>
                 <div class="submission-date">${formatDate(submission.submittedAt)}</div>
             </div>
             <div class="submission-file">
                 <span class="file-icon">📎</span>
                 <a href="${submission.fileUrl}" target="_blank" class="file-link">
-                    ${submission.fileName}
+                    Скачать файл
                 </a>
             </div>
             <div class="submission-homework">
-                Задание ID: ${submission.homeworkId}
+                Задание ID: ${submission.homeworkId} | Статус: ${submission.status}
             </div>
         `;
         
