@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диагностика WebApp</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #3498db;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .log {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow: auto;
+            font-family: monospace;
+            margin-top: 10px;
+        }
+        .status {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .status-ok {
+            color: #27ae60;
+        }
+        .status-error {
+            color: #c0392b;
+        }
+        .screen-preview {
+            border: 1px dashed #3498db;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 100px;
+        }
+        .note {
+            background-color: #fef9e7;
+            padding: 10px;
+            border-left: 4px solid #f1c40f;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Диагностика Telegram WebApp</h1>
+    
+    <div class="note">
+        <strong>Примечание:</strong> Эта страница предназначена для диагностики Telegram WebApp. Используйте ее, чтобы проверить работу веб-приложения вне контекста Telegram.
+    </div>
+    
+    <div class="card">
+        <h3>Проверка структуры DOM</h3>
+        <button id="checkDOM">Проверить DOM</button>
+        <button id="showScreens">Показать экраны</button>
+        <div id="domStatus" class="status">Статус: Не проверено</div>
+        <div id="domLog" class="log">Результаты проверки будут здесь...</div>
+    </div>
+    
+    <div class="card">
+        <h3>Тестирование навигации</h3>
+        <button id="showLoading">Экран загрузки</button>
+        <button id="showRegistration">Регистрация</button>
+        <button id="showMain">Главный экран</button>
+        <button id="showAssignments">Задания</button>
+        <button id="showSubmission">Отправка ДЗ</button>
+        <button id="showError">Экран ошибки</button>
+        <div id="navStatus" class="status">Статус: Не проверено</div>
+    </div>
+    
+    <div class="card">
+        <h3>Проверка Telegram WebApp API</h3>
+        <button id="checkTelegram">Проверить Telegram API</button>
+        <button id="mockTelegram">Симулировать API</button>
+        <div id="telegramStatus" class="status">Статус: Не проверено</div>
+        <div id="telegramLog" class="log">Результаты проверки будут здесь...</div>
+    </div>
+    
+    <div class="card">
+        <h3>Активный экран</h3>
+        <div id="screenPreview" class="screen-preview">
+            <p>Здесь будет отображен текущий активный экран</p>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные переменные для хранения состояния
+        let mockTelegramAPI = false;
+        
+        // Функция для вывода в лог
+        function logToDOM(elementId, message, clear = false) {
+            const logElement = document.getElementById(elementId);
+            if (clear) {
+                logElement.innerHTML = '';
+            }
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        // Функция для установки статуса
+        function setStatus(elementId, message, isOk = true) {
+            const statusElement = document.getElementById(elementId);
+            statusElement.textContent = `Статус: ${message}`;
+            statusElement.className = `status ${isOk ? 'status-ok' : 'status-error'}`;
+        }
+
+        // Проверка DOM структуры
+        document.getElementById('checkDOM').addEventListener('click', function() {
+            logToDOM('domLog', 'Проверка DOM структуры...', true);
+            
+            // Проверка наличия основных элементов
+            const screens = document.querySelectorAll('.screen');
+            logToDOM('domLog', `Найдено экранов: ${screens.length}`);
+            
+            if (screens.length === 0) {
+                logToDOM('domLog', 'ОШИБКА: Не найдено ни одного экрана с классом .screen!');
+                setStatus('domStatus', 'Ошибка: Экраны не найдены', false);
+                return;
+            }
+            
+            // Проверка основных экранов
+            const requiredScreens = [
+                'loadingScreen', 
+                'registrationScreen', 
+                'mainScreen', 
+                'assignmentsScreen', 
+                'submissionScreen',
+                'error-screen'
+            ];
+            
+            let allFound = true;
+            requiredScreens.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    logToDOM('domLog', `✅ ${id} найден`);
+                } else {
+                    logToDOM('domLog', `❌ ${id} не найден!`);
+                    allFound = false;
+                }
+            });
+            
+            if (allFound) {
+                setStatus('domStatus', 'ОК: Все экраны найдены', true);
+            } else {
+                setStatus('domStatus', 'Ошибка: Не все экраны найдены', false);
+            }
+            
+            // Проверка JavaScript
+            try {
+                if (typeof showScreen === 'function') {
+                    logToDOM('domLog', '✅ Функция showScreen доступна');
+                } else {
+                    logToDOM('domLog', '❌ Функция showScreen не найдена!');
+                    allFound = false;
+                }
+                
+                if (typeof safelyShowMainScreen === 'function') {
+                    logToDOM('domLog', '✅ Функция safelyShowMainScreen доступна');
+                } else {
+                    logToDOM('domLog', '❌ Функция safelyShowMainScreen не найдена!');
+                    allFound = false;
+                }
+            } catch (e) {
+                logToDOM('domLog', `❌ Ошибка при проверке JS функций: ${e.message}`);
+                allFound = false;
+            }
+        });
+
+        // Показать список всех экранов
+        document.getElementById('showScreens').addEventListener('click', function() {
+            logToDOM('domLog', 'Список всех экранов:', true);
+            
+            const screens = document.querySelectorAll('.screen');
+            screens.forEach(screen => {
+                const id = screen.id;
+                const display = window.getComputedStyle(screen).display;
+                const isActive = screen.classList.contains('active');
+                logToDOM('domLog', `ID: ${id}, Активен: ${isActive}, Display: ${display}`);
+                
+                // Проверка видимости
+                if (isActive && display === 'none') {
+                    logToDOM('domLog', `⚠️ Экран ${id} отмечен как активный, но скрыт через CSS!`);
+                }
+            });
+        });
+
+        // Функция переключения экранов
+        function testShowScreen(screenName) {
+            // Находим экран по ID
+            let targetId;
+            if (screenName === 'error') {
+                targetId = 'error-screen';
+            } else {
+                targetId = `${screenName}Screen`;
+            }
+            
+            const screen = document.getElementById(targetId);
+            if (!screen) {
+                setStatus('navStatus', `Ошибка: Экран ${targetId} не найден`, false);
+                return;
+            }
+            
+            // Скрываем все экраны
+            const allScreens = document.querySelectorAll('.screen');
+            allScreens.forEach(s => {
+                s.classList.remove('active');
+                s.style.display = 'none';
+            });
+            
+            // Показываем выбранный экран
+            screen.classList.add('active');
+            screen.style.display = 'block';
+            
+            // Копируем содержимое экрана в превью
+            document.getElementById('screenPreview').innerHTML = `
+                <h4>Текущий экран: ${targetId}</h4>
+                <div class="preview-content">${screen.innerHTML}</div>
+            `;
+            
+            setStatus('navStatus', `Показан экран: ${screenName}`, true);
+        }
+
+        // Настройка обработчиков для кнопок навигации
+        document.getElementById('showLoading').addEventListener('click', () => testShowScreen('loading'));
+        document.getElementById('showRegistration').addEventListener('click', () => testShowScreen('registration'));
+        document.getElementById('showMain').addEventListener('click', () => testShowScreen('main'));
+        document.getElementById('showAssignments').addEventListener('click', () => testShowScreen('assignments'));
+        document.getElementById('showSubmission').addEventListener('click', () => testShowScreen('submission'));
+        document.getElementById('showError').addEventListener('click', () => testShowScreen('error'));
+
+        // Проверка Telegram API
+        document.getElementById('checkTelegram').addEventListener('click', function() {
+            logToDOM('telegramLog', 'Проверка Telegram WebApp API...', true);
+            
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                logToDOM('telegramLog', '✅ Telegram WebApp API доступен');
+                
+                // Проверка данных пользователя
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    const user = tg.initDataUnsafe.user;
+                    logToDOM('telegramLog', `✅ Данные пользователя: ID=${user.id}, Имя=${user.first_name}`);
+                    setStatus('telegramStatus', 'ОК: Telegram API доступен', true);
+                } else {
+                    logToDOM('telegramLog', '⚠️ Telegram API доступен, но данные пользователя отсутствуют');
+                    setStatus('telegramStatus', 'Внимание: Нет данных пользователя', false);
+                }
+            } else {
+                logToDOM('telegramLog', '❌ Telegram WebApp API не доступен!');
+                logToDOM('telegramLog', 'Это нормально при запуске вне Telegram.');
+                setStatus('telegramStatus', 'Не доступен: запуск вне Telegram', false);
+            }
+        });
+
+        // Симуляция Telegram API
+        document.getElementById('mockTelegram').addEventListener('click', function() {
+            logToDOM('telegramLog', 'Симуляция Telegram WebApp API...', true);
+            
+            window.Telegram = {
+                WebApp: {
+                    initDataUnsafe: {
+                        user: {
+                            id: 123456789,
+                            first_name: "Тестовый",
+                            last_name: "Пользователь",
+                            username: "test_user"
+                        }
+                    },
+                    initData: "mock_init_data",
+                    ready: function() {
+                        logToDOM('telegramLog', 'Mock: WebApp.ready() вызван');
+                    },
+                    close: function() {
+                        logToDOM('telegramLog', 'Mock: WebApp.close() вызван');
+                    },
+                    BackButton: {
+                        show: function() { logToDOM('telegramLog', 'Mock: BackButton.show() вызван'); },
+                        hide: function() { logToDOM('telegramLog', 'Mock: BackButton.hide() вызван'); },
+                        isVisible: false
+                    },
+                    onEvent: function(event, callback) {
+                        logToDOM('telegramLog', `Mock: onEvent для события "${event}" зарегистрирован`);
+                    }
+                }
+            };
+            
+            mockTelegramAPI = true;
+            
+            logToDOM('telegramLog', '✅ Симуляция Telegram API успешно настроена');
+            logToDOM('telegramLog', 'Теперь вы можете перезагрузить страницу и протестировать приложение');
+            setStatus('telegramStatus', 'ОК: Симуляция API включена', true);
+        });
+        
+        // Проверка при загрузке
+        window.addEventListener('load', function() {
+            logToDOM('domLog', 'Страница загружена, проверка DOM...');
+            document.getElementById('checkDOM').click();
+            
+            logToDOM('telegramLog', 'Проверка Telegram WebApp API...');
+            document.getElementById('checkTelegram').click();
+        });
+    </script>
+</body>
+</html>

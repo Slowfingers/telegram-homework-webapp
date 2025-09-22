@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Debug Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #2c3e50;
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn-green {
+            background-color: #2ecc71;
+        }
+        .btn-green:hover {
+            background-color: #27ae60;
+        }
+        .btn-red {
+            background-color: #e74c3c;
+        }
+        .btn-red:hover {
+            background-color: #c0392b;
+        }
+        .response {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            overflow: auto;
+            max-height: 300px;
+            margin-top: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .logs {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow: auto;
+        }
+        .log {
+            margin-bottom: 5px;
+            border-bottom: 1px solid #34495e;
+            padding-bottom: 5px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .status-success {
+            background-color: #d5f5e3;
+            color: #27ae60;
+        }
+        .status-error {
+            background-color: #fadbd8;
+            color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <h1>Google Sheets API Debug Panel</h1>
+    
+    <div class="section">
+        <h2>API Status Check</h2>
+        <button id="initSheetsBtn" class="btn btn-green">Initialize Google Sheets</button>
+        <button id="checkEnvBtn" class="btn">Check Environment Variables</button>
+        <div id="apiStatus" class="status">Status: Not checked</div>
+        <div id="apiResponse" class="response">Response will appear here...</div>
+    </div>
+
+    <div class="section">
+        <h2>Register Student</h2>
+        <div class="form-group">
+            <label for="regTelegramId">Telegram ID:</label>
+            <input type="text" id="regTelegramId" value="123456789">
+        </div>
+        <div class="form-group">
+            <label for="regClass">Class:</label>
+            <select id="regClass">
+                <option value="5А">5А</option>
+                <option value="5Б">5Б</option>
+                <option value="6А">6А</option>
+                <option value="6Б">6Б</option>
+                <option value="7А">7А</option>
+                <option value="7Б">7Б</option>
+                <option value="8А">8А</option>
+                <option value="8Б" selected>8Б</option>
+                <option value="9А">9А</option>
+                <option value="9Б">9Б</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="regLastName">Last Name:</label>
+            <input type="text" id="regLastName" value="Иванов">
+        </div>
+        <div class="form-group">
+            <label for="regFirstName">First Name:</label>
+            <input type="text" id="regFirstName" value="Иван">
+        </div>
+        <button id="registerBtn" class="btn">Register Student</button>
+        <div id="registerResponse" class="response">Response will appear here...</div>
+    </div>
+
+    <div class="section">
+        <h2>Get User</h2>
+        <div class="form-group">
+            <label for="getUserTelegramId">Telegram ID:</label>
+            <input type="text" id="getUserTelegramId" value="123456789">
+        </div>
+        <button id="getUserBtn" class="btn">Get User</button>
+        <div id="getUserResponse" class="response">Response will appear here...</div>
+    </div>
+
+    <div class="section">
+        <h2>Add Homework (Teachers/Admins Only)</h2>
+        <div class="form-group">
+            <label for="hwAdminId">Admin/Teacher ID:</label>
+            <input type="text" id="hwAdminId" value="330977942" placeholder="Your Telegram ID">
+        </div>
+        <div class="form-group">
+            <label for="hwClass">Class:</label>
+            <select id="hwClass">
+                <option value="5А">5А</option>
+                <option value="5Б">5Б</option>
+                <option value="6А">6А</option>
+                <option value="6Б">6Б</option>
+                <option value="7А">7А</option>
+                <option value="7Б">7Б</option>
+                <option value="8А">8А</option>
+                <option value="8Б" selected>8Б</option>
+                <option value="9А">9А</option>
+                <option value="9Б">9Б</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="hwSubject">Subject:</label>
+            <input type="text" id="hwSubject" value="Информатика">
+        </div>
+        <div class="form-group">
+            <label for="hwDescription">Description:</label>
+            <input type="text" id="hwDescription" value="Практическая работа №5: Создание веб-приложения">
+        </div>
+        <div class="form-group">
+            <label for="hwDeadline">Deadline:</label>
+            <input type="date" id="hwDeadline">
+        </div>
+        <button id="addHomeworkBtn" class="btn">Add Homework</button>
+        <div id="addHomeworkResponse" class="response">Response will appear here...</div>
+    </div>
+
+    <div class="section">
+        <h2>Register Teacher</h2>
+        <div class="form-group">
+            <label for="teacherTelegramId">Teacher Telegram ID:</label>
+            <input type="text" id="teacherTelegramId" value="987654321">
+        </div>
+        <div class="form-group">
+            <label for="teacherLastName">Last Name:</label>
+            <input type="text" id="teacherLastName" value="Петрова">
+        </div>
+        <div class="form-group">
+            <label for="teacherFirstName">First Name:</label>
+            <input type="text" id="teacherFirstName" value="Мария">
+        </div>
+        <div class="form-group">
+            <label for="teacherSubject">Subject:</label>
+            <input type="text" id="teacherSubject" value="Математика">
+        </div>
+        <div class="form-group">
+            <label for="teacherClasses">Classes (comma-separated):</label>
+            <input type="text" id="teacherClasses" value="8А, 8Б, 9А">
+        </div>
+        <div class="form-group">
+            <label for="teacherRole">Role:</label>
+            <select id="teacherRole">
+                <option value="teacher" selected>Teacher</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="teacherAdminId">Admin ID (who is registering):</label>
+            <input type="text" id="teacherAdminId" value="330977942">
+        </div>
+        <button id="registerTeacherBtn" class="btn">Register Teacher</button>
+        <div id="registerTeacherResponse" class="response">Response will appear here...</div>
+    </div>
+
+    <div class="section">
+        <h2>Get Homework</h2>
+        <div class="form-group">
+            <label for="getHwClass">Class:</label>
+            <select id="getHwClass">
+                <option value="5А">5А</option>
+                <option value="5Б">5Б</option>
+                <option value="6А">6А</option>
+                <option value="6Б">6Б</option>
+                <option value="7А">7А</option>
+                <option value="7Б">7Б</option>
+                <option value="8А">8А</option>
+                <option value="8Б" selected>8Б</option>
+                <option value="9А">9А</option>
+                <option value="9Б">9Б</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+            </select>
+        </div>
+        <button id="getHomeworkBtn" class="btn">Get Homework</button>
+        <div id="getHomeworkResponse" class="response">Response will appear here...</div>
+    </div>
+
+    <div class="section">
+        <h2>Debug Logs</h2>
+        <div id="logs" class="logs">Logs will appear here...</div>
+    </div>
+
+    <script>
+        // Set today's date + 7 days as default deadline
+        const defaultDeadline = new Date();
+        defaultDeadline.setDate(defaultDeadline.getDate() + 7);
+        document.getElementById('hwDeadline').value = defaultDeadline.toISOString().split('T')[0];
+
+        // Log function
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML = `<div class="log">[${timestamp}] ${message}</div>` + logs.innerHTML;
+        }
+
+        // Set API base URL
+        const API_BASE_URL = '/.netlify/functions';
+
+        // Check environment variables
+        document.getElementById('checkEnvBtn').addEventListener('click', async () => {
+            log('Checking environment variables...');
+            try {
+                const response = await fetch('/debug-env-vars');
+                const data = await response.text();
+                log('Environment variables checked');
+                document.getElementById('apiResponse').innerText = data;
+            } catch (error) {
+                log(`Error checking environment variables: ${error.message}`);
+                document.getElementById('apiResponse').innerText = `Error: ${error.message}`;
+                document.getElementById('apiStatus').className = 'status status-error';
+                document.getElementById('apiStatus').innerText = 'Status: Error - Cannot connect to backend';
+            }
+        });
+
+        // Initialize Google Sheets
+        document.getElementById('initSheetsBtn').addEventListener('click', async () => {
+            log('Initializing Google Sheets...');
+            document.getElementById('apiStatus').className = 'status';
+            document.getElementById('apiStatus').innerText = 'Status: Checking...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/init-google-sheets`);
+                const data = await response.json();
+                
+                log('Google Sheets initialization response received');
+                document.getElementById('apiResponse').innerText = JSON.stringify(data, null, 2);
+                
+                if (data.success) {
+                    document.getElementById('apiStatus').className = 'status status-success';
+                    document.getElementById('apiStatus').innerText = 'Status: Success - Sheets initialized';
+                } else {
+                    document.getElementById('apiStatus').className = 'status status-error';
+                    document.getElementById('apiStatus').innerText = 'Status: Error - ' + (data.message || 'Unknown error');
+                }
+            } catch (error) {
+                log(`Error initializing Google Sheets: ${error.message}`);
+                document.getElementById('apiResponse').innerText = `Error: ${error.message}`;
+                document.getElementById('apiStatus').className = 'status status-error';
+                document.getElementById('apiStatus').innerText = 'Status: Error - Cannot connect to backend';
+            }
+        });
+
+        // Register Student
+        document.getElementById('registerBtn').addEventListener('click', async () => {
+            const telegramId = document.getElementById('regTelegramId').value;
+            const classValue = document.getElementById('regClass').value;
+            const lastName = document.getElementById('regLastName').value;
+            const firstName = document.getElementById('regFirstName').value;
+            
+            if (!telegramId || !classValue || !lastName || !firstName) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            log(`Registering student: ${firstName} ${lastName}, Class: ${classValue}, ID: ${telegramId}`);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/register-student`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        telegramId,
+                        class: classValue,
+                        lastName,
+                        firstName
+                    })
+                });
+                
+                const data = await response.json();
+                log('Registration response received');
+                document.getElementById('registerResponse').innerText = JSON.stringify(data, null, 2);
+            } catch (error) {
+                log(`Error registering student: ${error.message}`);
+                document.getElementById('registerResponse').innerText = `Error: ${error.message}`;
+            }
+        });
+
+        // Get User
+        document.getElementById('getUserBtn').addEventListener('click', async () => {
+            const telegramId = document.getElementById('getUserTelegramId').value;
+            
+            if (!telegramId) {
+                alert('Please enter a Telegram ID');
+                return;
+            }
+            
+            log(`Getting user with ID: ${telegramId}`);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/get-user?telegramId=${telegramId}`);
+                const data = await response.json();
+                log('User data received');
+                document.getElementById('getUserResponse').innerText = JSON.stringify(data, null, 2);
+            } catch (error) {
+                log(`Error getting user: ${error.message}`);
+                document.getElementById('getUserResponse').innerText = `Error: ${error.message}`;
+            }
+        });
+
+        // Add Homework
+        document.getElementById('addHomeworkBtn').addEventListener('click', async () => {
+            const adminId = document.getElementById('hwAdminId').value;
+            const classValue = document.getElementById('hwClass').value;
+            const subject = document.getElementById('hwSubject').value;
+            const description = document.getElementById('hwDescription').value;
+            const deadline = document.getElementById('hwDeadline').value;
+            
+            if (!adminId || !classValue || !subject || !description || !deadline) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            log(`Adding homework for class ${classValue}: ${subject} (by ${adminId})`);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/add-homework`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        adminId,
+                        class: classValue,
+                        subject,
+                        description,
+                        deadline
+                    })
+                });
+                
+                const data = await response.json();
+                log('Homework added');
+                document.getElementById('addHomeworkResponse').innerText = JSON.stringify(data, null, 2);
+            } catch (error) {
+                log(`Error adding homework: ${error.message}`);
+                document.getElementById('addHomeworkResponse').innerText = `Error: ${error.message}`;
+            }
+        });
+
+        // Register Teacher
+        document.getElementById('registerTeacherBtn').addEventListener('click', async () => {
+            const telegramId = document.getElementById('teacherTelegramId').value;
+            const lastName = document.getElementById('teacherLastName').value;
+            const firstName = document.getElementById('teacherFirstName').value;
+            const subject = document.getElementById('teacherSubject').value;
+            const classes = document.getElementById('teacherClasses').value;
+            const role = document.getElementById('teacherRole').value;
+            const adminId = document.getElementById('teacherAdminId').value;
+            
+            if (!telegramId || !lastName || !firstName || !subject || !adminId) {
+                alert('Please fill all required fields');
+                return;
+            }
+            
+            log(`Registering teacher: ${firstName} ${lastName}, Subject: ${subject}, Classes: ${classes}`);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/register-teacher`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        telegramId,
+                        lastName,
+                        firstName,
+                        subject,
+                        classes: classes.split(',').map(c => c.trim()),
+                        role,
+                        adminId
+                    })
+                });
+                
+                const data = await response.json();
+                log('Teacher registration response received');
+                document.getElementById('registerTeacherResponse').innerText = JSON.stringify(data, null, 2);
+            } catch (error) {
+                log(`Error registering teacher: ${error.message}`);
+                document.getElementById('registerTeacherResponse').innerText = `Error: ${error.message}`;
+            }
+        });
+
+        // Get Homework
+        document.getElementById('getHomeworkBtn').addEventListener('click', async () => {
+            const classValue = document.getElementById('getHwClass').value;
+            
+            if (!classValue) {
+                alert('Please select a class');
+                return;
+            }
+            
+            log(`Getting homework for class: ${classValue}`);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/get-homework?class=${classValue}`);
+                const data = await response.json();
+                log('Homework data received');
+                document.getElementById('getHomeworkResponse').innerText = JSON.stringify(data, null, 2);
+            } catch (error) {
+                log(`Error getting homework: ${error.message}`);
+                document.getElementById('getHomeworkResponse').innerText = `Error: ${error.message}`;
+            }
+        });
+
+        // Initial log
+        log('Debug panel loaded');
+    </script>
+</body>
+</html>

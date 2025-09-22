@@ -8,6 +8,7 @@
     "dev": "npx http-server . -p 8080"
   },
   "dependencies": {
+    "googleapis": "^160.0.0",
     "lambda-multipart-parser": "^1.0.1",
     "papaparse": "^5.4.1"
   },

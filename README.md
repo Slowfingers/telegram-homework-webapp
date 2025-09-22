@@ -1,6 +1,6 @@
 # Homework Teacher WebApp
 
-Мини-веб-приложение учителя информатики для управления домашними заданиями через Telegram WebApp.
+Мини-веб-приложение учителя информатики для управления домашними заданиями через Telegram WebApp. Интегрировано с Google Sheets для хранения информации о студентах, заданиях и выполненных работах.
 
 ## Функционал
 
@@ -29,7 +29,7 @@
 ### Интеграция
 - **Telegram WebApp API** - для получения данных пользователя
 - **Yandex Disk API** - для хранения файлов
-- **Yandex Tables** - для хранения данных пользователей и заданий
+- **Google Sheets API** - для хранения данных пользователей и заданий
 - **Netlify Functions** - серверная логика
 
 ## Настройка окружения
@@ -39,7 +39,8 @@
 ```bash
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 YANDEX_OAUTH_TOKEN=your_yandex_oauth_token_here
-YANDEX_SPREADSHEET_ID=your_spreadsheet_id_here
+GOOGLE_SERVICE_ACCOUNT_JSON=your_service_account_json_here
+SPREADSHEET_ID=your_spreadsheet_id_here
 ```
 
 ### Получение Yandex OAuth токена
@@ -121,6 +122,13 @@ npm run build
 1. Создайте приложение в Yandex OAuth
 2. Получите OAuth токен с правами на Yandex Disk
 3. Создайте папку `/Homework_App` в корне диска
+
+### Google Sheets API
+1. Создайте проект в Google Cloud Console
+2. Активируйте Google Sheets API
+3. Создайте сервисный аккаунт и скачайте JSON ключ
+4. Создайте таблицу в Google Sheets и дайте доступ сервисному аккаунту
+5. Скопируйте ID таблицы из URL (часть между /d/ и /edit)
 
 ### Структура папок в Yandex Disk
 ```

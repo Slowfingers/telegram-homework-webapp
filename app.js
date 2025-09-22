@@ -5,8 +5,10 @@ let currentAssignments = [];
 let archivedAssignments = [];
 let selectedFile = null;
 let isInitialized = false; // Prevent multiple initializations
+let currentScreen = 'loading'; // Track current screen
+let isAdmin = false; // Flag for admin users
 
-const API_BASE_URL = 'https://evrikaforhome.netlify.app/.netlify/functions';
+const API_BASE_URL = '/.netlify/functions';
 
 // Debug flag
 const DEBUG = false;
@@ -103,8 +105,8 @@ function clearAppData() {
 }
 
 // Initialize the app
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, starting initialization...');
+window.addEventListener('load', function() {
+    console.log('Window loaded, starting initialization...');
     
     // Prevent multiple initializations
     if (isInitialized) {
@@ -112,18 +114,93 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
+    // Show loading screen first
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        loadingScreen.classList.add('active');
+    } else {
+        console.warn('Loading screen element not found');
+    }
+    
+    // Try immediate initialization first
     try {
-        initializeApp();
-        isInitialized = true;
-    } catch (error) {
-        debugLog('Initialization error:', error);
-        showError('Ошибка инициализации приложения');
+        if (window.Telegram && window.Telegram.WebApp) {
+            console.log('Telegram WebApp detected on window load, initializing immediately...');
+            initializeApp();
+            isInitialized = true;
+            return;
+        }
+    } catch (e) {
+        console.warn('Could not initialize immediately:', e);
+    }
+    
+    // If direct initialization failed, try with a delay as fallback
+    setTimeout(() => {
+        if (!isInitialized) {
+            console.log('Delayed initialization...');
+            try {
+                initializeApp();
+                isInitialized = true;
+            } catch (error) {
+                console.error('Initialization error:', error);
+                debugLog('Initialization error:', error);
+                showError('Ошибка инициализации приложения');
+            }
+        }
+    }, 500);
+});
+
+// Backup initialization on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM content loaded event');
+    if (!isInitialized) {
+        console.log('App not yet initialized on DOMContentLoaded, scheduling backup...');
+        setTimeout(() => {
+            if (!isInitialized) {
+                console.log('Backup initialization...');
+                try {
+                    initializeApp();
+                    isInitialized = true;
+                } catch (error) {
+                    console.error('Backup initialization error:', error);
+                }
+            }
+        }, 1000);
     }
 });
 
+// Debug function to diagnose screens
+function diagnoseScreens() {
+    console.log('Diagnosing all screens:');
+    const screens = document.querySelectorAll('.screen');
+    console.log(`Found ${screens.length} screens:`);
+    
+    screens.forEach(screen => {
+        const id = screen.id;
+        const isActive = screen.classList.contains('active');
+        const display = window.getComputedStyle(screen).display;
+        console.log(`Screen ID: ${id}, Active: ${isActive}, Display: ${display}`);
+    });
+    
+    // Check specific screens
+    const expectedScreens = ['loadingScreen', 'registrationScreen', 'mainScreen', 'error-screen', 'assignmentsScreen'];
+    expectedScreens.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            console.log(`✅ ${id} exists`); 
+        } else {
+            console.error(`❌ ${id} not found!`);
+        }
+    });
+}
+
 // Initialize Telegram WebApp
 function initializeApp() {
+    console.log('Initializing app...');
     debugLog('Initializing app...');
+    
+    // Diagnose screens on initialization
+    diagnoseScreens();
     
     // Clear any previous app state
     clearAppData();
@@ -133,39 +210,56 @@ function initializeApp() {
     debugLog('Environment:', isLocal ? 'Local development' : 'Production');
     
     // Initialize Telegram WebApp
-    if (window.Telegram && window.Telegram.WebApp) {
-        tg = window.Telegram.WebApp;
-        tg.ready();
-        
-        debugLog('Telegram WebApp initialized');
-        debugLog('Telegram user data:', tg.initDataUnsafe?.user);
-        
-        // Set up the app
-        setupEventListeners();
-        checkUserRegistration();
-    } else {
-        console.error('Telegram WebApp not available');
-        debugLog('Telegram WebApp not available - running in mock mode');
-        
-        // Mock mode for testing
-        tg = {
-            initDataUnsafe: {
-                user: { id: 123456789, first_name: 'Test', last_name: 'User' }
-            },
-            initData: 'mock_init_data',
-            BackButton: {
-                show: function() { debugLog('Mock: BackButton shown'); }
-            },
-            showAlert: function(message, callback) { 
-                alert(message); 
-                if (callback) callback();
-            },
-            close: function() { debugLog('Mock: WebApp closed'); },
-            onEvent: function(event, callback) { debugLog('Mock: Event listener added for:', event); }
-        };
-        
-        setupEventListeners();
-        checkUserRegistration();
+    try {
+        if (window.Telegram && window.Telegram.WebApp) {
+            tg = window.Telegram.WebApp;
+            tg.ready();
+            
+            console.log('Telegram WebApp initialized with data:', tg.initDataUnsafe?.user);
+            debugLog('Telegram WebApp initialized');
+            debugLog('Telegram user data:', tg.initDataUnsafe?.user);
+            
+            // Set up the app
+            setupEventListeners();
+            checkUserRegistration();
+        } else {
+            console.warn('Telegram WebApp not available, using mock mode');
+            debugLog('Telegram WebApp not available - running in mock mode');
+            
+            // Mock mode for testing
+            tg = {
+                initDataUnsafe: {
+                    user: { id: 123456789, first_name: 'Test', last_name: 'User' }
+                },
+                initData: 'mock_init_data',
+                BackButton: {
+                    show: function() { debugLog('Mock: BackButton shown'); },
+                    hide: function() { debugLog('Mock: BackButton hidden'); },
+                    isVisible: false
+                },
+                showAlert: function(message, callback) { 
+                    alert(message); 
+                    if (callback) callback();
+                },
+                close: function() { debugLog('Mock: WebApp closed'); },
+                onEvent: function(event, callback) { 
+                    debugLog('Mock: Event listener added for:', event); 
+                    // Simulate the event listener
+                    if (event === 'mainButtonClicked') {
+                        // Nothing to do
+                    }
+                }
+            };
+            
+            // В тестовом режиме показываем сообщение
+            console.log('Running in mock mode with test user ID: 123456789');
+            
+            setupEventListeners();
+            checkUserRegistration();
+        }
+    } catch (error) {
+        console.error('Error initializing Telegram WebApp:', error);
+        showError('Ошибка при инициализации Telegram WebApp');
     }
 }
 
@@ -216,7 +310,7 @@ function setupEventListeners() {
     // Back buttons
     const backButtons = document.querySelectorAll('.back-btn');
     backButtons.forEach(btn => {
-        btn.addEventListener('click', () => showScreen('main'));
+        btn.addEventListener('click', () => safelyShowMainScreen());
     });
     
     // Submit homework form
@@ -242,6 +336,8 @@ function setupEventListeners() {
         uploadArea.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', handleFileSelect);
         
+        // Initialize upload UI
+        updateFileUploadUI();
         debugLog('File upload handlers set up successfully');
     } else {
         debugLog('Upload area or file input not found');
@@ -284,17 +380,13 @@ async function checkUserRegistration() {
         const telegramId = tg.initDataUnsafe.user.id;
         debugLog('User ID:', telegramId);
         
-        // Use persistent backend check-user (Yandex Disk CSV)
+        // Use Google Sheets API to get user
         try {
-            const response = await fetch(`${API_BASE_URL}/check-user`, {
-                method: 'POST',
+            const response = await fetch(`${API_BASE_URL}/get-user?telegramId=${telegramId}`, {
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    telegramId: telegramId,
-                    initData: tg.initData
-                })
+                }
             });
             
             const data = await response.json();
@@ -303,9 +395,9 @@ async function checkUserRegistration() {
             if (data.success && data.user) {
                 // User is registered
                 currentUser = data.user;
-                console.log('User found from backend:', currentUser);
+                console.log('User found from Google Sheets:', currentUser);
                 updateDebugInfo();
-                showScreen('main');
+                safelyShowMainScreen();
             } else {
                 // User needs to register
                 console.log('User not found, showing registration');
@@ -343,39 +435,44 @@ async function handleRegistration(e) {
             return;
         }
         
-        const userData = {
-            telegramId: tg.initDataUnsafe.user.id,
-            class: classSelect.value,
-            lastName: lastName.value.trim(),
-            firstName: firstName.value.trim()
-        };
+        const telegramId = tg.initDataUnsafe.user.id;
+        const classValue = classSelect.value;
+        const lastNameValue = lastName.value.trim();
+        const firstNameValue = firstName.value.trim();
         
-        if (!userData.class || !userData.lastName || !userData.firstName) {
+        if (!classValue || !lastNameValue || !firstNameValue) {
             showModal('error', 'Пожалуйста, заполните все поля');
             return;
         }
         
-        // Use persistent backend register-user (Yandex Disk CSV)
+        // Use Google Sheets API to register student
         try {
-            const response = await fetch(`${API_BASE_URL}/register-user`, {
+            const response = await fetch(`${API_BASE_URL}/register-student`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     telegramId: telegramId,
-                    initData: tg.initData,
-                    userData: userData
+                    class: classValue,
+                    lastName: lastNameValue,
+                    firstName: firstNameValue,
+                    initData: tg.initData
                 })
             });
             
             const data = await response.json();
             
             if (data.success) {
-                currentUser = userData;
+                currentUser = {
+                    telegramId,
+                    class: classValue,
+                    lastName: lastNameValue,
+                    firstName: firstNameValue
+                };
                 showModal('success', 'Регистрация прошла успешно!');
                 setTimeout(() => {
-                    showScreen('main');
+                    safelyShowMainScreen();
                 }, 2000);
             } else {
                 showModal('error', data.message || 'Ошибка регистрации');
@@ -383,12 +480,17 @@ async function handleRegistration(e) {
         } catch (error) {
             // Fallback to mock mode if backend is not available
             debugLog('Backend not available, using mock mode:', error);
-            debugLog('Mock: Registering user:', userData);
+            debugLog('Mock: Registering user:', { telegramId, class: classValue, lastName: lastNameValue, firstName: firstNameValue });
             
-            currentUser = userData;
+            currentUser = {
+                telegramId,
+                class: classValue,
+                lastName: lastNameValue,
+                firstName: firstNameValue
+            };
             showModal('success', 'Регистрация прошла успешно! (демо режим)');
             setTimeout(() => {
-                showScreen('main');
+                safelyShowMainScreen();
             }, 2000);
         }
     } catch (error) {
@@ -397,52 +499,92 @@ async function handleRegistration(e) {
     }
 }
 
-// Show main menu
-function showMainMenu() {
-    const userName = document.getElementById('user-name');
-    const userClass = document.getElementById('user-class');
-    
-    if (userName && currentUser) {
-        userName.textContent = `${currentUser.firstName} ${currentUser.lastName}`;
-    } else if (userName) {
-        userName.textContent = 'Пользователь';
-    }
-    
-    if (userClass && currentUser) {
-        userClass.textContent = currentUser.class;
-    } else if (userClass) {
-        userClass.textContent = 'Не указан';
-    }
-    
-    debugLog('showMainMenu: currentUser =', currentUser);
-    
-    showScreen('main');
-}
+// Переместили функцию showMainMenu ниже в код с улучшенной реализацией
 
 // Load assignments
 async function loadAssignments(type = 'current') {
     try {
-        // Try backend first, fallback to mock data if it fails
-        try {
-            const response = await fetch(`${API_BASE_URL}/get-assignments`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    telegramId: tg.initDataUnsafe.user.id,
-                    initData: tg.initData,
-                    userClass: currentUser.class,
-                    type: type
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                displayAssignments(data.assignments);
+        // Determine which class(es) to load assignments for
+        let classesToLoad = [];
+        
+        if (currentUser && currentUser.isTeacher) {
+            // Teachers can see assignments for all their classes
+            if (currentUser.classes && currentUser.classes.length > 0) {
+                classesToLoad = currentUser.classes;
             } else {
-                debugLog('Backend returned error, using mock data');
+                // If no specific classes, show message
+                debugLog('Teacher has no assigned classes');
+                displayAssignments([]);
+                return;
+            }
+        } else if (currentUser && currentUser.class) {
+            // Students see assignments for their class only
+            classesToLoad = [currentUser.class];
+        } else {
+            debugLog('No user class available, cannot load assignments');
+            useMockAssignments(type);
+            return;
+        }
+        
+        // Try Google Sheets API first, fallback to mock data if it fails
+        try {
+            // For teachers with multiple classes, we need to fetch assignments for each class
+            let allAssignments = [];
+            
+            for (const classGroup of classesToLoad) {
+                const response = await fetch(`${API_BASE_URL}/get-homework?class=${classGroup}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.homework) {
+                    // Add class info to each assignment for display
+                    const classAssignments = data.homework.map(hw => ({
+                        ...hw,
+                        displayClass: classGroup // Add class for display purposes
+                    }));
+                    allAssignments = allAssignments.concat(classAssignments);
+                }
+            }
+            
+            // Process all assignments
+            if (allAssignments.length > 0) {
+                // Transform the homework data to match our expected format
+                const assignments = allAssignments.map(hw => ({
+                    id: hw.id,
+                    date: hw.deadline,  // Use deadline as display date
+                    topic: hw.subject,
+                    description: hw.description,
+                    class: hw.displayClass // Include class info for teachers
+                }));
+                
+                // Sort by date, more recent first for current, older first for archived
+                const now = new Date();
+                const currentItems = [];
+                const archivedItems = [];
+                
+                assignments.forEach(assignment => {
+                    const assignmentDate = new Date(assignment.date);
+                    if (type === 'current' && assignmentDate >= now) {
+                        currentItems.push(assignment);
+                    } else if (type === 'archived' && assignmentDate < now) {
+                        archivedItems.push(assignment);
+                    }
+                });
+                
+                // Sort assignments by date
+                currentItems.sort((a, b) => new Date(a.date) - new Date(b.date));
+                archivedItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                // Display appropriate assignments
+                const displayItems = type === 'current' ? currentItems : archivedItems;
+                displayAssignments(displayItems);
+            } else {
+                debugLog('No assignments found, using mock data');
                 useMockAssignments(type);
             }
         } catch (error) {
@@ -498,8 +640,14 @@ function displayAssignments(assignments) {
         const card = document.createElement('div');
         card.className = 'assignment-card';
         
+        // Show class info for teachers
+        const classInfo = assignment.class && currentUser && currentUser.isTeacher 
+            ? `<div class="assignment-class">Класс: ${assignment.class}</div>` 
+            : '';
+        
         card.innerHTML = `
             <div class="assignment-date">${formatDate(assignment.date)}</div>
+            ${classInfo}
             <div class="assignment-topic">${assignment.topic}</div>
             <div class="assignment-description">${assignment.description}</div>
         `;
@@ -513,18 +661,19 @@ async function handleHomeworkSubmission(e) {
     e.preventDefault();
     
     try {
+        if (!currentUser) {
+            showModal('error', 'Пользователь не найден');
+            return;
+        }
+        
         const form = e.target;
-        const formData = new FormData(form);
         const fileInput = form.querySelector('input[type="file"]');
         
-        const submissionData = {
-            telegramId: tg.initDataUnsafe.user.id,
-            class: formData.get('class'),
-            lastName: formData.get('lastName'),
-            firstName: formData.get('firstName'),
-            assignmentDate: formData.get('assignmentDate'),
-            assignmentTopic: formData.get('assignmentTopic')
-        };
+        const telegramId = tg.initDataUnsafe.user.id;
+        
+        // For now, just use a placeholder for homeworkId
+        // In a real implementation, you would select from available homework assignments
+        const homeworkId = '1';
         
         let fileData = null;
         
@@ -543,26 +692,26 @@ async function handleHomeworkSubmission(e) {
             fileData = {
                 fileName: file.name,
                 fileContent: fileContent,
-                fileType: file.type,
-                fileSize: file.size
+                fileType: file.type
             };
             
-            debugLog('File data prepared for upload:', fileData.fileName, fileData.fileSize);
+            debugLog('File data prepared for upload:', fileData.fileName, file.size);
         } else {
-            debugLog('No file selected for submission');
+            showModal('error', 'Пожалуйста, выберите файл для отправки');
+            return;
         }
         
-        // Try backend first, fallback to mock mode if it fails
+        // Try Google Sheets API first, fallback to mock mode if it fails
         try {
-            const response = await fetch(`${API_BASE_URL}/submit-homework-new`, {
+            const response = await fetch(`${API_BASE_URL}/submit-homework-sheets`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    telegramId: submissionData.telegramId,
+                    telegramId: telegramId,
+                    homeworkId: homeworkId,
                     initData: tg.initData,
-                    submissionData: submissionData,
                     fileData: fileData
                 })
             });
@@ -579,7 +728,7 @@ async function handleHomeworkSubmission(e) {
         } catch (error) {
             // Fallback to mock mode if backend is not available
             debugLog('Backend not available, using mock mode for homework submission:', error);
-            debugLog('Mock: Submitting homework:', submissionData);
+            debugLog('Mock: Submitting homework for user:', telegramId, 'homework:', homeworkId);
             
             setTimeout(() => {
                 showModal('success', 'Домашнее задание успешно отправлено! (демо режим)');
@@ -607,6 +756,103 @@ function fileToBase64(file) {
     });
 }
 
+// File upload handlers
+function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.classList.remove('drag-over');
+}
+
+function handleFileDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.classList.remove('drag-over');
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const fileInput = document.getElementById('homework-file');
+        if (fileInput) {
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelect.call(fileInput);
+        }
+    }
+}
+
+function handleFileSelect() {
+    if (this.files && this.files.length > 0) {
+        const file = this.files[0];
+        selectedFile = file;
+        updateFileUploadUI();
+        debugLog('File selected:', file.name, file.size, file.type);
+    }
+}
+
+function updateFileUploadUI() {
+    const uploadArea = document.getElementById('upload-area');
+    const fileNameDisplay = document.getElementById('file-name');
+    const fileSizeDisplay = document.getElementById('file-size');
+    const fileIcon = document.getElementById('file-icon');
+    
+    if (!uploadArea) {
+        debugLog('Upload area not found');
+        return;
+    }
+    
+    if (selectedFile) {
+        uploadArea.classList.add('has-file');
+        
+        if (fileNameDisplay) {
+            fileNameDisplay.textContent = selectedFile.name;
+        }
+        
+        if (fileSizeDisplay) {
+            // Format size in KB or MB
+            const size = selectedFile.size;
+            let formattedSize;
+            
+            if (size > 1024 * 1024) {
+                formattedSize = (size / (1024 * 1024)).toFixed(1) + ' MB';
+            } else {
+                formattedSize = Math.ceil(size / 1024) + ' KB';
+            }
+            
+            fileSizeDisplay.textContent = formattedSize;
+        }
+        
+        if (fileIcon) {
+            // Set icon based on file type
+            if (selectedFile.type.includes('image')) {
+                fileIcon.textContent = '🖼️';
+            } else if (selectedFile.type.includes('pdf')) {
+                fileIcon.textContent = '📄';
+            } else if (selectedFile.type.includes('word') || selectedFile.name.endsWith('.doc') || selectedFile.name.endsWith('.docx')) {
+                fileIcon.textContent = '📝';
+            } else {
+                fileIcon.textContent = '📎';
+            }
+        }
+    } else {
+        uploadArea.classList.remove('has-file');
+        
+        if (fileNameDisplay) {
+            fileNameDisplay.textContent = '';
+        }
+        
+        if (fileSizeDisplay) {
+            fileSizeDisplay.textContent = '';
+        }
+        
+        if (fileIcon) {
+            fileIcon.textContent = '📤';
+        }
+    }
+}
+
 // Handle admin form submission
 async function handleAddAssignment(e) {
     e.preventDefault();
@@ -618,37 +864,38 @@ async function handleAddAssignment(e) {
         const assignmentClass = document.getElementById('assignment-class');
         const assignmentTopic = document.getElementById('assignment-topic');
         const assignmentDescription = document.getElementById('assignment-description');
-        const materialLink = document.getElementById('material-link');
+        const materialLink = document.getElementById('assignment-link');
         
         if (!assignmentDate || !assignmentClass || !assignmentTopic || !assignmentDescription) {
             showModal('error', 'Пожалуйста, заполните все обязательные поля');
             return;
         }
         
-        const assignmentData = {
-            date: assignmentDate.value,
-            class: assignmentClass.value,
-            topic: assignmentTopic.value.trim(),
-            description: assignmentDescription.value.trim(),
-            materialLink: materialLink ? materialLink.value.trim() : ''
-        };
+        const classValue = assignmentClass.value;
+        const subject = assignmentTopic.value.trim();
+        const description = assignmentDescription.value.trim();
+        const deadline = assignmentDate.value;
+        const link = materialLink ? materialLink.value.trim() : '';
         
-        if (!assignmentData.date || !assignmentData.class || !assignmentData.topic || !assignmentData.description) {
+        if (!deadline || !classValue || !subject || !description) {
             showModal('error', 'Пожалуйста, заполните все обязательные поля');
             return;
         }
         
-        // Try backend first, fallback to mock mode if it fails
+        // Try Google Sheets API first, fallback to mock mode if it fails
         try {
-            const response = await fetch(`${API_BASE_URL}/add-assignment`, {
+            const response = await fetch(`${API_BASE_URL}/add-homework`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    telegramId: tg.initDataUnsafe.user.id,
-                    initData: tg.initData,
-                    assignmentData: assignmentData
+                    adminId: tg.initDataUnsafe.user.id, // Add admin ID for permission check
+                    class: classValue,
+                    subject: subject,
+                    description: description + (link ? `\n\nСсылка на материалы: ${link}` : ''),
+                    deadline: deadline,
+                    initData: tg.initData // Add for validation
                 })
             });
             
@@ -669,7 +916,7 @@ async function handleAddAssignment(e) {
         } catch (error) {
             // Fallback to mock mode if backend is not available
             debugLog('Backend not available, using mock mode for assignment creation:', error);
-            debugLog('Mock: Adding assignment:', assignmentData);
+            debugLog('Mock: Adding assignment:', { class: classValue, subject, description, deadline });
             
             setTimeout(() => {
                 // Reset form
@@ -690,38 +937,81 @@ async function handleAddAssignment(e) {
 
 // Show specific screen
 function showScreen(screenName) {
+    console.log(`Switching to screen: ${screenName}`);
     debugLog(`Switching to screen: ${screenName}`);
     
-    // Hide loading screen
+    // Update current screen
+    currentScreen = screenName;
+    
+    // Handle special case for error-screen which doesn't have 'Screen' suffix
+    let targetId = screenName === 'error-screen' ? 'error-screen' : `${screenName}Screen`;
+    
+    // Hide loading screen explicitly
     const loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen) {
         loadingScreen.classList.remove('active');
+        console.log('Removed active class from loadingScreen');
+    } else {
+        console.warn('Loading screen element not found');
     }
     
     // Hide all screens
     const screens = document.querySelectorAll('.screen');
-    screens.forEach(screen => {
-        screen.classList.remove('active');
-    });
+    if (screens.length === 0) {
+        console.error('No screens found with .screen class!');
+    } else {
+        console.log(`Found ${screens.length} screens to hide`);
+        screens.forEach(screen => {
+            screen.classList.remove('active');
+        });
+    }
     
     // Show target screen
-    const targetScreen = document.getElementById(`${screenName}Screen`);
+    const targetScreen = document.getElementById(targetId);
     if (targetScreen) {
+        console.log(`Showing screen: ${targetId}`);
         targetScreen.classList.add('active');
+        targetScreen.style.display = 'block';
         
         // Special handling for main screen
         if (screenName === 'main') {
-            showMainMenu();
+            console.log('Special handling for main screen');
+            // Don't call showMainMenu recursively from here to prevent stack overflow
+            if (targetId !== 'mainScreen') {
+                showMainMenu();
+            }
         }
     } else {
-        debugLog(`Screen not found: ${screenName}Screen`);
+        console.error(`Target screen not found: ${targetId}`);
+        debugLog(`Screen not found: ${targetId}`);
+        diagnoseScreens(); // Show diagnostics
+        
+        // Emergency fallback - show registration
+        if (screenName !== 'registration' && screenName !== 'error-screen') {
+            console.log('Emergency fallback to registration screen');
+            const regScreen = document.getElementById('registrationScreen');
+            if (regScreen) {
+                regScreen.classList.add('active');
+                regScreen.style.display = 'block';
+            }
+        }
     }
+    
+    // Update back button based on current screen
+    updateBackButton();
 }
 
 // Show error screen
 function showError(message) {
-    document.getElementById('error-message').textContent = message;
-    showScreen('error');
+    console.error('Showing error screen with message:', message);
+    const errorMessage = document.getElementById('error-message');
+    if (errorMessage) {
+        errorMessage.textContent = message;
+    } else {
+        console.error('Error message element not found');
+    }
+    // 'error-screen' - это ID элемента в HTML
+    showScreen('error-screen');
 }
 
 // Utility function to format date
@@ -736,10 +1026,69 @@ function formatDate(dateString) {
 
 // Show main menu with user info
 function showMainMenu() {
+    console.log('Showing main menu for user:', currentUser);
     debugLog('Showing main menu for user:', currentUser);
     
+    // Update user display in main menu
+    updateMainMenuUserDisplay();
+    
+    // Safely show main screen without recursion
+    if (currentScreen !== 'main') {
+        safelyShowMainScreen();
+    }
+}
+
+// Safely show main screen without triggering recursion
+function safelyShowMainScreen() {
+    console.log('Safely showing main screen');
+    currentScreen = 'main';
+    
+    // Hide all screens first
+    const screens = document.querySelectorAll('.screen');
+    screens.forEach(screen => {
+        screen.classList.remove('active');
+    });
+    
+    // Show main screen
+    const mainScreen = document.getElementById('mainScreen');
+    if (mainScreen) {
+        mainScreen.classList.add('active');
+        mainScreen.style.display = 'block';
+        console.log('Main screen activated');
+    } else {
+        console.error('Main screen element not found!');
+    }
+    
+    // Update back button
+    updateBackButton();
+}
+
+// Update user display in main menu
+function updateMainMenuUserDisplay() {
+    // Update name and class in the UI
+    const userName = document.getElementById('user-name');
+    const userClass = document.getElementById('user-class');
+    
+    if (userName) {
+        userName.textContent = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Гость';
+    }
+    
+    if (userClass) {
+        if (currentUser && currentUser.isTeacher) {
+            // For teachers, show their subject and classes
+            const classesText = currentUser.classes && currentUser.classes.length > 0 
+                ? currentUser.classes.join(', ') 
+                : 'Все классы';
+            userClass.textContent = `${currentUser.subject} (${classesText})`;
+        } else if (currentUser && currentUser.class) {
+            userClass.textContent = currentUser.class;
+        } else {
+            userClass.textContent = 'Не указан';
+        }
+    }
+    
+    // Update user info display if present
     if (currentUser) {
-        // Update user info display
         const userInfo = document.getElementById('user-info');
         if (userInfo) {
             userInfo.innerHTML = `
@@ -754,17 +1103,31 @@ function showMainMenu() {
         }
         
         // Show/hide admin button based on user role
-        const adminBtn = document.getElementById('adminBtn');
+        const adminBtn = document.getElementById('admin-btn'); // Исправлено с adminBtn на admin-btn
         if (adminBtn) {
-            if (isAdmin || currentUser.isAdmin) {
+            // Show admin button for admins and teachers
+            const canAddHomework = isAdmin || 
+                                  currentUser.isAdmin || 
+                                  currentUser.isTeacher || 
+                                  (currentUser.role && (currentUser.role === 'admin' || currentUser.role === 'teacher'));
+            
+            if (canAddHomework) {
                 adminBtn.style.display = 'block';
+                // Update button text based on role
+                const buttonText = adminBtn.querySelector('.btn-text') || adminBtn;
+                if (currentUser.isTeacher && !currentUser.isAdmin && currentUser.role !== 'admin') {
+                    buttonText.textContent = '📝 Добавить задание';
+                } else {
+                    buttonText.textContent = '⚙️ Админ панель';
+                }
+                console.log('Admin/Teacher button shown for:', currentUser.role || 'admin');
             } else {
                 adminBtn.style.display = 'none';
             }
+        } else {
+            console.warn('Admin button not found');
         }
     }
-    
-    showScreen('main');
 }
 
 // Prefill submission form with user data
@@ -909,42 +1272,49 @@ function switchAssignmentTab(type) {
 }
 
 // Handle Telegram WebApp events (only if tg is available)
-if (typeof tg !== 'undefined' && tg && tg.onEvent) {
-    tg.onEvent('mainButtonClicked', function() {
-        // Handle main button click if needed
-        debugLog('Main button clicked');
-    });
-
-    tg.onEvent('backButtonClicked', function() {
-        // Handle back button
-        debugLog('Back button clicked, current screen:', currentScreen);
-        switch (currentScreen) {
-            case 'assignments':
-            case 'submission':
-            case 'admin':
-                showScreen('main');
-                break;
-            case 'registration':
-                // Can't go back from registration
-                break;
-            default:
-                showScreen('main');
-                break;
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        if (typeof tg !== 'undefined' && tg && tg.onEvent) {
+            debugLog('Setting up Telegram WebApp event handlers');
+            tg.onEvent('mainButtonClicked', function() {
+                // Handle main button click if needed
+                debugLog('Main button clicked');
+            });
+        
+            tg.onEvent('backButtonClicked', function() {
+                // Handle back button
+                debugLog('Back button clicked, current screen:', currentScreen);
+                console.log('Handling back button, current screen:', currentScreen);
+                switch (currentScreen) {
+                    case 'assignments':
+                    case 'submission':
+                    case 'admin':
+                        safelyShowMainScreen();
+                        break;
+                    case 'registration':
+                        // Can't go back from registration
+                        console.log('Cannot go back from registration screen');
+                        break;
+                    default:
+                        safelyShowMainScreen();
+                        break;
+                }
+            });
+            debugLog('Telegram WebApp event handlers set up successfully');
         }
-    });
-}
+    }, 300);
+});
 // Show back button when not on main screen
 function updateBackButton() {
-    if (currentScreen === 'main-menu' || currentScreen === 'loading' || currentScreen === 'registration') {
-        tg.BackButton.hide();
+    if (currentScreen === 'main' || currentScreen === 'loading' || currentScreen === 'registration') {
+        if (tg && tg.BackButton) {
+            tg.BackButton.hide();
+        }
     } else {
-        tg.BackButton.show();
+        if (tg && tg.BackButton) {
+            tg.BackButton.show();
+        }
     }
 }
 
-// Update back button when screen changes
-const originalShowScreen = showScreen;
-showScreen = function(screenName) {
-    originalShowScreen(screenName);
-    updateBackButton();
-};
+// Функция updateBackButton вызывается непосредственно в showScreen
