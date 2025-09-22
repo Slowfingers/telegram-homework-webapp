@@ -41,11 +41,14 @@ exports.handler = async (event, context) => {
         
         if (clientEmail && privateKey) {
             // Use separate environment variables
+            // Fix private key format - replace literal \n with actual newlines
+            const fixedPrivateKey = privateKey.replace(/\\n/g, '\n');
+            
             serviceAccount = {
                 type: process.env.GOOGLE_SERVICE_ACCOUNT_TYPE || 'service_account',
                 project_id: process.env.GOOGLE_PROJECT_ID,
                 private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
-                private_key: privateKey,
+                private_key: fixedPrivateKey,
                 client_email: clientEmail,
                 client_id: process.env.GOOGLE_CLIENT_ID,
                 auth_uri: 'https://accounts.google.com/o/oauth2/auth',
