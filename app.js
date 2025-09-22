@@ -710,7 +710,109 @@ async function loadSubmissions() {
             return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/get-submissions?adminId=${currentUser.telegramId}`, {
+        // Load submissions and homework data
+        const [submissionsResponse, homeworkResponse] = await Promise.all([
+            fetch(`${API_BASE_URL}/get-submissions?adminId=${currentUser.telegramId}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            }),
+            // Load all homework to get subject names
+            fetch(`${API_BASE_URL}/get-homework?class=all`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+        ]);
+
+        const submissionsData = await submissionsResponse.json();
+        const homeworkData = await homeworkResponse.json();
+
+        if (submissionsData.success) {
+            // Create homework map for better display
+            const homeworkMap = {};
+            if (homeworkData.success && homeworkData.homework) {
+                homeworkData.homework.forEach(hw => {
+                    homeworkMap[hw.id] = hw;
+                });
+            }
+            
+            // Populate filters
+            populateSubmissionFilters(submissionsData.submissions, homeworkMap);
+            displaySubmissions(submissionsData.submissions);
+        } else {
+            displaySubmissions([]);
+        }
+    } catch (error) {
+        console.log('Error loading submissions:', error);
+        displaySubmissions([]);
+    }
+}
+
+// Populate filters for submissions
+function populateSubmissionFilters(submissions, homeworkMap = {}) {
+    const homeworkFilter = document.getElementById('submissions-homework-filter');
+    const classFilter = document.getElementById('submissions-class-filter');
+    
+    if (!homeworkFilter || !classFilter) return;
+    
+    // Get unique homework IDs and classes
+    const homeworkIds = [...new Set(submissions.map(sub => sub.homeworkId))];
+    const classes = [...new Set(submissions.map(sub => sub.class))].sort();
+    
+    // Populate homework filter
+    homeworkFilter.innerHTML = '<option value="">Все задания</option>';
+    homeworkIds.forEach(hwId => {
+        const option = document.createElement('option');
+        option.value = hwId;
+        
+        // Show subject and deadline if available
+        const homework = homeworkMap[hwId];
+        if (homework) {
+            option.textContent = `${homework.subject} (до ${formatDate(homework.deadline)})`;
+        } else {
+            option.textContent = `Задание ${hwId}`;
+        }
+        
+        homeworkFilter.appendChild(option);
+    });
+    
+    // Populate class filter
+    classFilter.innerHTML = '<option value="">Все классы</option>';
+    classes.forEach(className => {
+        const option = document.createElement('option');
+        option.value = className;
+        option.textContent = className;
+        classFilter.appendChild(option);
+    });
+    
+    // Add event listeners for filtering (remove old listeners first)
+    homeworkFilter.removeEventListener('change', filterSubmissions);
+    classFilter.removeEventListener('change', filterSubmissions);
+    homeworkFilter.addEventListener('change', filterSubmissions);
+    classFilter.addEventListener('change', filterSubmissions);
+}
+
+// Filter submissions based on selected filters
+function filterSubmissions() {
+    const homeworkFilter = document.getElementById('submissions-homework-filter');
+    const classFilter = document.getElementById('submissions-class-filter');
+    
+    if (!homeworkFilter || !classFilter) return;
+    
+    const selectedHomework = homeworkFilter.value;
+    const selectedClass = classFilter.value;
+    
+    // Reload submissions with filters
+    loadSubmissionsWithFilters(selectedHomework, selectedClass);
+}
+
+// Load submissions with filters
+async function loadSubmissionsWithFilters(homeworkId = '', classGroup = '') {
+    try {
+        let url = `${API_BASE_URL}/get-submissions?adminId=${currentUser.telegramId}`;
+        if (homeworkId) url += `&homeworkId=${homeworkId}`;
+        if (classGroup) url += `&classGroup=${classGroup}`;
+        
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -725,7 +827,7 @@ async function loadSubmissions() {
             displaySubmissions([]);
         }
     } catch (error) {
-        console.log('Error loading submissions:', error);
+        console.log('Error loading filtered submissions:', error);
         displaySubmissions([]);
     }
 }

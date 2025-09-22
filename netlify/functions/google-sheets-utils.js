@@ -337,11 +337,11 @@ async function getHomework(classGroup) {
         const rows = response.data.values || [];
         const headers = rows[0] || ['id', 'class', 'subject', 'description', 'deadline', 'createdDate'];
         
-        // Filter homework by class
+        // Filter homework by class (or get all if classGroup is 'all')
         const homework = [];
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            if (row[1] === classGroup) {
+            if (classGroup === 'all' || row[1] === classGroup) {
                 const homeworkItem = {
                     id: row[0],
                     class: row[1],
