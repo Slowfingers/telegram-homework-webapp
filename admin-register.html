@@ -80,7 +80,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>⚙️ Регистрация администратора</h1>
+        <h1>⚙️ Регистрация первого администратора</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 20px;">
+            Эта страница для регистрации самого первого админа в системе.<br>
+            После этого новых админов можно будет добавлять через обычную регистрацию.
+        </p>
         
         <form id="admin-register-form">
             <div class="form-group">
@@ -141,7 +145,7 @@
             };
             
             try {
-                const response = await fetch('/.netlify/functions/register-teacher', {
+                const response = await fetch('/.netlify/functions/register-first-admin', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
