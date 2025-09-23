@@ -410,13 +410,25 @@ async function submitHomework(telegramId, homeworkId, fileUrl) {
             return { success: false, message: 'Homework assignment not found' };
         }
         
-        // Get existing submissions to determine next row
+        // Get existing submissions to check for duplicates and determine next row
         const submissionsResponse = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: 'Submissions!A:F'
+            range: 'Submissions!A:G'
         });
         
         const submissionRows = submissionsResponse.data.values || [];
+        
+        // Check if student already submitted for this homework
+        for (let i = 1; i < submissionRows.length; i++) {
+            const row = submissionRows[i];
+            if (row[0] === telegramId && row[3] === homeworkId) {
+                return { 
+                    success: false, 
+                    message: 'Вы уже отправили файл для этого задания. Можно отправить только один файл на задание.' 
+                };
+            }
+        }
+        
         const nextRow = submissionRows.length + 1;
         const submissionDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
         

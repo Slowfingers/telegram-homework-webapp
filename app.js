@@ -422,24 +422,30 @@ async function loadHomeworkForSubmission() {
     try {
         if (!currentUser || !currentUser.class) return;
         
-        const response = await fetch(`${API_BASE_URL}/get-homework?class=${currentUser.class}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
+        // Load homework and submissions in parallel
+        const [homeworkResponse, submissionsResponse] = await Promise.all([
+            fetch(`${API_BASE_URL}/get-homework?class=${currentUser.class}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            }),
+            fetch(`${API_BASE_URL}/get-submissions?adminId=${currentUser.telegramId}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            }).catch(() => ({ json: () => ({ success: false }) })) // Ignore errors for students
+        ]);
         
-        const data = await response.json();
+        const homeworkData = await homeworkResponse.json();
+        const submissionsData = await submissionsResponse.json();
+        
         const homeworkSelect = document.getElementById('homework-select');
-        
         if (!homeworkSelect) return;
         
         homeworkSelect.innerHTML = '<option value="">Выберите задание</option>';
         
-        if (data.success && data.homework) {
+        if (homeworkData.success && homeworkData.homework) {
             // Filter current assignments only
             const now = new Date();
-            const currentAssignments = data.homework.filter(hw => {
+            const currentAssignments = homeworkData.homework.filter(hw => {
                 const deadline = new Date(hw.deadline);
                 return deadline >= now;
             });
@@ -449,10 +455,27 @@ async function loadHomeworkForSubmission() {
                 return;
             }
             
+            // Get submitted homework IDs for current user
+            const submittedHomeworkIds = new Set();
+            if (submissionsData.success && submissionsData.submissions) {
+                submissionsData.submissions
+                    .filter(sub => sub.studentId === currentUser.telegramId)
+                    .forEach(sub => submittedHomeworkIds.add(sub.homeworkId));
+            }
+            
             currentAssignments.forEach(hw => {
                 const option = document.createElement('option');
                 option.value = hw.id;
-                option.textContent = `${hw.subject} - ${formatDate(hw.deadline)}`;
+                
+                const isSubmitted = submittedHomeworkIds.has(hw.id);
+                if (isSubmitted) {
+                    option.textContent = `${hw.subject} - ${formatDate(hw.deadline)} ✅ (уже сдано)`;
+                    option.disabled = true;
+                    option.style.color = '#666';
+                } else {
+                    option.textContent = `${hw.subject} - ${formatDate(hw.deadline)}`;
+                }
+                
                 homeworkSelect.appendChild(option);
             });
         } else {
@@ -492,8 +515,8 @@ async function handleHomeworkSubmission(e) {
         
         const file = fileInput.files[0];
         
-        if (file.size > 10 * 1024 * 1024) { // 10MB limit
-            showModal('error', 'Размер файла не должен превышать 10MB');
+        if (file.size > 50 * 1024 * 1024) { // 50MB limit
+            showModal('error', 'Размер файла не должен превышать 50MB');
             return;
         }
         
