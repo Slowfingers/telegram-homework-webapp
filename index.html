@@ -338,10 +338,30 @@
                 </form>
                 
                 <div class="admin-actions">
+                    <button id="view-homework-btn" class="btn-modern btn-secondary">
+                        <span class="btn-text">📚 Мои задания</span>
+                        <div class="btn-ripple"></div>
+                    </button>
                     <button id="view-submissions-btn" class="btn-modern btn-secondary">
                         <span class="btn-text">📊 Просмотр отправленных работ</span>
                         <div class="btn-ripple"></div>
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Homework Screen -->
+        <div id="myHomeworkScreen" class="screen">
+            <div class="container">
+                <div class="screen-header">
+                    <button class="back-btn">
+                        <span class="back-icon">←</span>
+                    </button>
+                    <h1 class="screen-title">📚 Мои задания</h1>
+                </div>
+                
+                <div id="my-homework-list" class="homework-container">
+                    <!-- Homework assignments will be loaded here -->
                 </div>
             </div>
         </div>

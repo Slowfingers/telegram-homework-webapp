@@ -120,6 +120,15 @@ function setupEventListeners() {
         adminForm.addEventListener('submit', handleAddAssignment);
     }
     
+    // View homework button
+    const viewHomeworkBtn = document.getElementById('view-homework-btn');
+    if (viewHomeworkBtn) {
+        viewHomeworkBtn.addEventListener('click', () => {
+            showScreen('myHomeworkScreen');
+            loadMyHomework();
+        });
+    }
+    
     // View submissions button
     const viewSubmissionsBtn = document.getElementById('view-submissions-btn');
     if (viewSubmissionsBtn) {
@@ -963,5 +972,194 @@ function updateProgress(percentage) {
     
     if (progressText) {
         progressText.textContent = `${percentage}%`;
+    }
+}
+
+// Load teacher's homework assignments
+async function loadMyHomework() {
+    try {
+        if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'teacher')) {
+            showModal('error', 'Доступ запрещен');
+            return;
+        }
+
+        // Get homework created by this teacher
+        const response = await fetch(`${API_BASE_URL}/get-homework?class=all`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.homework) {
+            // Filter by teacher's classes or show all if admin
+            let myHomework = data.homework;
+            if (currentUser.role === 'teacher' && currentUser.classes) {
+                const teacherClasses = currentUser.classes.split(',');
+                myHomework = data.homework.filter(hw => teacherClasses.includes(hw.class));
+            }
+            
+            displayMyHomework(myHomework);
+        } else {
+            displayMyHomework([]);
+        }
+    } catch (error) {
+        console.log('Error loading homework:', error);
+        displayMyHomework([]);
+    }
+}
+
+// Display teacher's homework assignments
+function displayMyHomework(homework) {
+    const container = document.getElementById('my-homework-list');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (homework.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--tg-theme-hint-color, #666666);">У вас пока нет выданных заданий</p>';
+        return;
+    }
+
+    homework.forEach(hw => {
+        const card = document.createElement('div');
+        card.className = 'homework-card';
+        
+        const deadline = new Date(hw.deadline);
+        const now = new Date();
+        const isExpired = deadline < now;
+        
+        card.innerHTML = `
+            <div class="homework-header">
+                <div class="homework-info">
+                    <h3>${hw.subject}</h3>
+                    <span class="homework-class">${hw.class}</span>
+                </div>
+                <div class="homework-status ${isExpired ? 'expired' : 'active'}">
+                    ${isExpired ? '❗ Просрочено' : '✅ Активно'}
+                </div>
+            </div>
+            <div class="homework-description">
+                ${hw.description}
+            </div>
+            <div class="homework-footer">
+                <div class="homework-deadline">
+                    📅 Сдать до: ${formatDate(hw.deadline)}
+                </div>
+                <div class="homework-actions">
+                    <button class="btn-edit" data-id="${hw.id}">
+                        ✏️ Редактировать
+                    </button>
+                    <button class="btn-delete" data-id="${hw.id}">
+                        🗑️ Удалить
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Add event listeners for edit and delete buttons
+        const editBtn = card.querySelector('.btn-edit');
+        const deleteBtn = card.querySelector('.btn-delete');
+        
+        if (editBtn) {
+            editBtn.addEventListener('click', () => editHomework(hw));
+        }
+        
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => deleteHomework(hw.id, hw.subject));
+        }
+        
+        container.appendChild(card);
+    });
+}
+
+// Edit homework assignment
+function editHomework(homework) {
+    // Show edit modal or form
+    const newDescription = prompt('Редактировать описание задания:', homework.description);
+    
+    if (newDescription && newDescription !== homework.description) {
+        updateHomework(homework.id, { description: newDescription });
+    }
+}
+
+// Update homework assignment
+async function updateHomework(homeworkId, updates) {
+    try {
+        showLoadingModal('⚙️ Обновляем задание...', 'Пожалуйста, подождите');
+        updateProgress(50);
+        
+        const response = await fetch(`${API_BASE_URL}/update-homework`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                homeworkId,
+                adminId: currentUser.telegramId,
+                ...updates
+            })
+        });
+
+        updateProgress(100);
+        const data = await response.json();
+        
+        setTimeout(() => {
+            hideLoadingModal();
+            
+            if (data.success) {
+                showModal('success', 'Задание успешно обновлено!');
+                loadMyHomework(); // Reload list
+            } else {
+                showModal('error', data.message || 'Ошибка при обновлении задания');
+            }
+        }, 500);
+    } catch (error) {
+        hideLoadingModal();
+        console.log('Error updating homework:', error);
+        showModal('error', 'Ошибка при обновлении задания');
+    }
+}
+
+// Delete homework assignment
+async function deleteHomework(homeworkId, subject) {
+    const confirmed = confirm(`Вы уверены, что хотите удалить задание "${subject}"?`);
+    
+    if (!confirmed) return;
+    
+    try {
+        showLoadingModal('🗑️ Удаляем задание...', 'Пожалуйста, подождите');
+        updateProgress(50);
+        
+        const response = await fetch(`${API_BASE_URL}/delete-homework`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                homeworkId,
+                adminId: currentUser.telegramId
+            })
+        });
+
+        updateProgress(100);
+        const data = await response.json();
+        
+        setTimeout(() => {
+            hideLoadingModal();
+            
+            if (data.success) {
+                showModal('success', 'Задание успешно удалено!');
+                loadMyHomework(); // Reload list
+            } else {
+                showModal('error', data.message || 'Ошибка при удалении задания');
+            }
+        }, 500);
+    } catch (error) {
+        hideLoadingModal();
+        console.log('Error deleting homework:', error);
+        showModal('error', 'Ошибка при удалении задания');
     }
 }
