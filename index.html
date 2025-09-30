@@ -51,6 +51,41 @@
             </div>
         </div>
 
+        <!-- Edit Homework Modal -->
+        <div id="edit-homework-modal" class="edit-modal">
+            <div class="edit-modal-content">
+                <div class="edit-modal-header">
+                    <h3>✏️ Редактировать задание</h3>
+                    <button class="edit-modal-close" id="edit-modal-close">&times;</button>
+                </div>
+                <div class="edit-modal-body">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="label-icon">📝</span>
+                            Описание задания
+                        </label>
+                        <textarea id="edit-description" class="modern-textarea" rows="5" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="label-icon">📅</span>
+                            Дедлайн
+                        </label>
+                        <input type="date" id="edit-deadline" class="modern-input" required>
+                    </div>
+                </div>
+                <div class="edit-modal-footer">
+                    <button class="btn-modern btn-secondary" id="edit-cancel-btn">
+                        <span class="btn-text">Отмена</span>
+                    </button>
+                    <button class="btn-modern btn-primary" id="edit-save-btn">
+                        <span class="btn-text">💾 Сохранить</span>
+                        <div class="btn-ripple"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Loading Screen -->
         <div id="loadingScreen" class="screen active">
             <div class="loading-container">

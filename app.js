@@ -30,6 +30,9 @@ window.addEventListener('load', function() {
 function initializeApp() {
     console.log('Initializing app...');
     
+    // Initialize edit modal
+    initEditModal();
+    
     // Initialize Telegram WebApp
     if (window.Telegram && window.Telegram.WebApp) {
         tg = window.Telegram.WebApp;
@@ -1076,12 +1079,89 @@ function displayMyHomework(homework) {
 }
 
 // Edit homework assignment
+let currentEditingHomework = null;
+
 function editHomework(homework) {
-    // Show edit modal or form
-    const newDescription = prompt('Редактировать описание задания:', homework.description);
+    currentEditingHomework = homework;
     
-    if (newDescription && newDescription !== homework.description) {
-        updateHomework(homework.id, { description: newDescription });
+    // Fill the modal with current data
+    const descriptionField = document.getElementById('edit-description');
+    const deadlineField = document.getElementById('edit-deadline');
+    const modal = document.getElementById('edit-homework-modal');
+    
+    if (descriptionField) descriptionField.value = homework.description || '';
+    if (deadlineField) deadlineField.value = homework.deadline || '';
+    
+    // Show modal
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+    }
+}
+
+// Initialize edit modal event listeners
+function initEditModal() {
+    const modal = document.getElementById('edit-homework-modal');
+    const closeBtn = document.getElementById('edit-modal-close');
+    const cancelBtn = document.getElementById('edit-cancel-btn');
+    const saveBtn = document.getElementById('edit-save-btn');
+    
+    // Close modal
+    const closeModal = () => {
+        if (modal) {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+        currentEditingHomework = null;
+    };
+    
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    
+    // Click outside to close
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+    }
+    
+    // Save changes
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            if (!currentEditingHomework) return;
+            
+            const descriptionField = document.getElementById('edit-description');
+            const deadlineField = document.getElementById('edit-deadline');
+            
+            const newDescription = descriptionField ? descriptionField.value : '';
+            const newDeadline = deadlineField ? deadlineField.value : '';
+            
+            if (!newDescription) {
+                showModal('error', 'Описание не может быть пустым');
+                return;
+            }
+            
+            if (!newDeadline) {
+                showModal('error', 'Укажите дедлайн');
+                return;
+            }
+            
+            const updates = {};
+            if (newDescription !== currentEditingHomework.description) {
+                updates.description = newDescription;
+            }
+            if (newDeadline !== currentEditingHomework.deadline) {
+                updates.deadline = newDeadline;
+            }
+            
+            if (Object.keys(updates).length > 0) {
+                updateHomework(currentEditingHomework.id, updates);
+            }
+            
+            closeModal();
+        });
     }
 }
 
